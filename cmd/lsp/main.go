@@ -1,7 +1,7 @@
 package main
 
-import "fmt"
+import "lox-server/internal/lsp"
 
 func main() {
-	fmt.Println("LSP entry point here")
+	lsp.StartServer()
 }
