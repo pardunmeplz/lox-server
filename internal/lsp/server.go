@@ -2,20 +2,22 @@ package lsp
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strconv"
-	"strings"
 )
 
 func StartServer() {
-	reader := bufio.NewReader(os.Stdin)
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Split(split)
 	writer := os.Stdout
 
 	for {
-		message, err := readMessage(reader)
+		message, err := readMessage(scanner)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error reading message: %v\n", err)
 			break
@@ -35,6 +37,35 @@ func StartServer() {
 	}
 }
 
+func split(data []byte, _ bool) (advance int, token []byte, err error) {
+	header, content, found := bytes.Cut(data, []byte{'\r', '\n', '\r', '\n'})
+
+	if !found {
+		return 0, nil, nil
+	}
+	contentLength, err := strconv.Atoi(string(header[len("Content-Length: "):]))
+	if err != nil {
+		return 0, nil, err
+	}
+
+	if len(content) < contentLength {
+		return 0, nil, nil
+	}
+
+	totalLength := len(header) + 4 + contentLength
+
+	return totalLength, data[:totalLength], nil
+
+}
+
+func getLogger(fileName string) *log.Logger {
+	logfile, err := os.OpenFile(fileName, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
+	if err != nil {
+		panic("invalid log file loc")
+	}
+	return log.New(logfile, "Pdun>> ", log.Ldate)
+}
+
 func writeMessage(writer io.Writer, response any) error {
 	data, err := json.Marshal(response)
 	if err != nil {
@@ -50,40 +81,42 @@ func writeMessage(writer io.Writer, response any) error {
 
 }
 
-func readMessage(reader *bufio.Reader) ([]byte, error) {
-	var contentLength int
+// func readMessage(scanner bufio.Scanner) ([]byte, error) {
+// 	var contentLength int
 
-	//read header
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			return nil, err
-		}
+//     for scanner.Scan()
 
-		line = strings.TrimSpace(line)
-		if line == "" {
-			break
-		}
-		if strings.HasPrefix(line, "Content-Length:") {
-			lengthStr := strings.TrimSpace(strings.TrimPrefix(line, "Content-Length:"))
-			contentLength, err = strconv.Atoi(lengthStr)
-			if err != nil {
-				return nil, fmt.Errorf("invalid Content-Length: %v", err)
-			}
-		}
-	}
-	if contentLength == 0 {
-		fmt.Println(3)
-		return nil, fmt.Errorf("missing Content-Length header")
-	}
+// 	for {
+// 		line, err := reader.ReadHeader()
 
-	//read body
-	body := make([]byte, contentLength)
-	_, err := io.ReadFull(reader, body)
-	if err != nil {
-		fmt.Println(4)
-		return nil, err
-	}
+// 		if err != nil {
+// 			return nil, err
+// 		}
 
-	return body, nil
-}
+// 		if line == "" {
+// 			break
+// 		}
+
+// 		// just ignoring non-content-length headers for now
+// 		if strings.HasPrefix(line, "Content-Length: ") {
+// 			lengthStr := strings.TrimPrefix(line, "Content-Length: ")
+// 			contentLength, err = strconv.Atoi(lengthStr)
+// 			if err != nil {
+// 				return nil, fmt.Errorf("invalid Content-Length: %v", err)
+// 			}
+// 		}
+// 	}
+
+// 	if contentLength == 0 {
+// 		return nil, fmt.Errorf("missing Content-Length header")
+// 	}
+
+// 	body, err := reader.ReadBody(contentLength)
+
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	return body, nil
+
+// }
