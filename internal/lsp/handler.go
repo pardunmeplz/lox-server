@@ -5,17 +5,38 @@ import (
 	"fmt"
 )
 
-func handleRequest(message []byte) (any, error) {
-	var request map[string]any
-	if err := json.Unmarshal(message, &request); err != nil {
+func handleRequest(msg string) ([]byte, error) {
+	var requestObj map[string]any
+
+	if err := json.Unmarshal([]byte(msg), &requestObj); err != nil {
 		return nil, fmt.Errorf("invalid JSON: %v", err)
 	}
 
-	response := map[string]any{
-		"jsonrpc": "2.0",
-		"id":      request["id"],
-		"result":  fmt.Sprintf("received method: %v", request["method"]),
+	responseObj, err := processRequest(requestObj)
+
+	if err != nil {
+		return nil, fmt.Errorf("invalid Request: %v", err)
 	}
 
-	return response, nil
+	response, err := json.Marshal(responseObj)
+
+	if err != nil {
+		return nil, fmt.Errorf("invalid Request: %v", err)
+	}
+
+	header := []byte(fmt.Sprintf("Content-Length: %d", len(response)))
+
+	return append(header, response...), nil
+}
+
+func processRequest(request map[string]any) (any, error) {
+
+	switch request["method"] {
+	case "initialize":
+		return protocolInitialize(request)
+
+	}
+
+	return nil, fmt.Errorf("Invalid Method: %v", request["method"])
+
 }

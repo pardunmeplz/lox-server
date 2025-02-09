@@ -3,5 +3,7 @@
 /vendor/
 *.test
 *.exe
+*.exe~
 *.out
 *.prof
+script.lox

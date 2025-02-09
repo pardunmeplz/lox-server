@@ -14,27 +14,41 @@ import (
 func StartServer() {
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Split(split)
-	writer := os.Stdout
+	// writer := os.Stdout
+	logger := getLogger("/log.txt")
+	logger.Print("start log")
 
-	for {
-		message, err := readMessage(scanner)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error reading message: %v\n", err)
-			break
-		}
+	for scanner.Scan() {
+		request := scanner.Text()
+		logger.Print(request)
 
-		response, err := handleRequest(message)
+		response, err := handleRequest(request)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error handling request: %v\n", err)
 			continue
 		}
-
-		if err := writeMessage(writer, response); err != nil {
-			fmt.Fprintf(os.Stderr, "Error writing response: %v\n", err)
-			break
-		}
-
+		logger.Print(string(response))
 	}
+
+	// for {
+	// 	message, err := readMessage(scanner)
+	// 	if err != nil {
+	// 		fmt.Fprintf(os.Stderr, "Error reading message: %v\n", err)
+	// 		break
+	// 	}
+
+	// 	response, err := handleRequest(message)
+	// 	if err != nil {
+	// 		fmt.Fprintf(os.Stderr, "Error handling request: %v\n", err)
+	// 		continue
+	// 	}
+
+	// 	if err := writeMessage(writer, response); err != nil {
+	// 		fmt.Fprintf(os.Stderr, "Error writing response: %v\n", err)
+	// 		break
+	// 	}
+
+	// }
 }
 
 func split(data []byte, _ bool) (advance int, token []byte, err error) {
@@ -52,10 +66,10 @@ func split(data []byte, _ bool) (advance int, token []byte, err error) {
 		return 0, nil, nil
 	}
 
+	bodyStart := len(header) + 4
 	totalLength := len(header) + 4 + contentLength
 
-	return totalLength, data[:totalLength], nil
-
+	return totalLength, data[bodyStart:totalLength], nil
 }
 
 func getLogger(fileName string) *log.Logger {
@@ -80,43 +94,3 @@ func writeMessage(writer io.Writer, response any) error {
 	return err
 
 }
-
-// func readMessage(scanner bufio.Scanner) ([]byte, error) {
-// 	var contentLength int
-
-//     for scanner.Scan()
-
-// 	for {
-// 		line, err := reader.ReadHeader()
-
-// 		if err != nil {
-// 			return nil, err
-// 		}
-
-// 		if line == "" {
-// 			break
-// 		}
-
-// 		// just ignoring non-content-length headers for now
-// 		if strings.HasPrefix(line, "Content-Length: ") {
-// 			lengthStr := strings.TrimPrefix(line, "Content-Length: ")
-// 			contentLength, err = strconv.Atoi(lengthStr)
-// 			if err != nil {
-// 				return nil, fmt.Errorf("invalid Content-Length: %v", err)
-// 			}
-// 		}
-// 	}
-
-// 	if contentLength == 0 {
-// 		return nil, fmt.Errorf("missing Content-Length header")
-// 	}
-
-// 	body, err := reader.ReadBody(contentLength)
-
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return body, nil
-
-// }
