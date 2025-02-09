@@ -11,7 +11,18 @@ import (
 	"time"
 )
 
+var serverState struct {
+	shutdown    bool
+	initialized bool
+}
+
+func initializeServerState() {
+	serverState.initialized = false
+	serverState.shutdown = false
+}
+
 func StartServer() {
+	initializeServerState()
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Split(split)
 	writer := os.Stdout
@@ -24,7 +35,7 @@ func StartServer() {
 
 		response, err := handleRequest(request)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error handling request: %v\n", err)
+			logger.Print(fmt.Sprintf("Error handling request: %v\n", err))
 			continue
 		}
 		if response == nil {
@@ -33,7 +44,7 @@ func StartServer() {
 
 		logger.Print(string(response))
 		if err := writeMessage(writer, response); err != nil {
-			fmt.Fprintf(os.Stderr, "Error writing response: %v\n", err)
+			logger.Print(fmt.Sprintf("Error writing response: %v\n", err))
 			break
 		}
 	}
@@ -65,7 +76,7 @@ func getLogger(fileName string) *log.Logger {
 	if err != nil {
 		panic("invalid log file loc")
 	}
-	return log.New(logfile, "Pdun>> ", log.Ldate)
+	return log.New(logfile, "\nPdun>> ", log.Ldate)
 }
 
 func writeMessage(writer io.Writer, response []byte) error {
