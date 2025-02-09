@@ -3,20 +3,20 @@ package lsp
 import (
 	"bufio"
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"strconv"
+	"time"
 )
 
 func StartServer() {
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Split(split)
-	// writer := os.Stdout
+	writer := os.Stdout
 	logger := getLogger("/log.txt")
-	logger.Print("start log")
+	logger.Print("start log" + time.Now().GoString())
 
 	for scanner.Scan() {
 		request := scanner.Text()
@@ -27,28 +27,16 @@ func StartServer() {
 			fmt.Fprintf(os.Stderr, "Error handling request: %v\n", err)
 			continue
 		}
+		if response == nil {
+			continue
+		}
+
 		logger.Print(string(response))
+		if err := writeMessage(writer, response); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing response: %v\n", err)
+			break
+		}
 	}
-
-	// for {
-	// 	message, err := readMessage(scanner)
-	// 	if err != nil {
-	// 		fmt.Fprintf(os.Stderr, "Error reading message: %v\n", err)
-	// 		break
-	// 	}
-
-	// 	response, err := handleRequest(message)
-	// 	if err != nil {
-	// 		fmt.Fprintf(os.Stderr, "Error handling request: %v\n", err)
-	// 		continue
-	// 	}
-
-	// 	if err := writeMessage(writer, response); err != nil {
-	// 		fmt.Fprintf(os.Stderr, "Error writing response: %v\n", err)
-	// 		break
-	// 	}
-
-	// }
 }
 
 func split(data []byte, _ bool) (advance int, token []byte, err error) {
@@ -80,17 +68,7 @@ func getLogger(fileName string) *log.Logger {
 	return log.New(logfile, "Pdun>> ", log.Ldate)
 }
 
-func writeMessage(writer io.Writer, response any) error {
-	data, err := json.Marshal(response)
-	if err != nil {
-		return err
-	}
-	header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(data))
-	_, err = writer.Write([]byte(header))
-	if err != nil {
-		return err
-	}
-	_, err = writer.Write(data)
+func writeMessage(writer io.Writer, response []byte) error {
+	_, err := writer.Write(response)
 	return err
-
 }
