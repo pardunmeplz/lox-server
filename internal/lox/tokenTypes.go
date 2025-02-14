@@ -35,4 +35,6 @@ const (
 	IDENTIFIER
 	EOF
 	SEMICOLON
+	DOT
+	COMMA
 )

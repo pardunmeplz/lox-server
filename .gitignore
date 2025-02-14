@@ -6,4 +6,5 @@
 *.exe~
 *.out
 *.prof
+._*
 script.lox
