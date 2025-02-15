@@ -7,12 +7,9 @@ func main() {
 	// disabling server to test scanning and parsing first
 	//lsp.StartServer()
 	lox.ScanLoxCode(`
-        +-
-        */,
-        // ++testing comments
-        " test error"
-        1232.2
-        .
+        var myTest = 121.5;
+        var myName = "second test"
+        print myTest + 25
         `)
 
 }

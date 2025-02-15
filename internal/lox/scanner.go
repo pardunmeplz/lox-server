@@ -31,12 +31,28 @@ func scan(code string) ([]token, error) {
 	return tokens, nil
 }
 
+var keywords map[string]int = map[string]int{
+	"if":    IF,
+	"true":  TRUE,
+	"false": FALSE,
+	"nil":   NIL,
+	"else":  ELSE,
+	"for":   FOR,
+	"while": WHILE,
+	"fun":   FUN,
+	"class": CLASS,
+	"var":   VAR,
+	"and":   AND,
+	"or":    OR,
+	"print": PRINT,
+}
+
 func scanNumber(char rune) (bool, error) {
 	if !unicode.IsDigit(char) {
 		return false, nil
 	}
 	start := current
-	for unicode.IsDigit(peek()) {
+	for (len(*source) > current) && unicode.IsDigit(peek()) {
 		advance()
 	}
 
@@ -49,7 +65,7 @@ func scanNumber(char rune) (bool, error) {
 		return true, nil
 	}
 
-	for unicode.IsDigit(peek()) {
+	for (len(*source) > current) && unicode.IsDigit(peek()) {
 		advance()
 	}
 	value, err := strconv.ParseFloat((*source)[start-1:current], 64)
@@ -59,6 +75,28 @@ func scanNumber(char rune) (bool, error) {
 	tokens = append(tokens, token{tokenType: NUMBER, line: line, value: value})
 	return true, nil
 
+}
+
+func scanKeywords(char rune) (bool, error) {
+	if !unicode.IsLetter(char) {
+		return false, nil
+	}
+
+	start := current
+	for len(*source) > current && (unicode.IsDigit(peek()) || unicode.IsLetter(peek()) || peek() == '_') {
+		advance()
+	}
+	value := (*source)[start-1 : current]
+
+	tokenType, isKeyword := keywords[value]
+	if isKeyword {
+		tokens = append(tokens, token{tokenType: tokenType, line: line})
+		return true, nil
+	}
+
+	tokens = append(tokens, token{tokenType: IDENTIFIER, line: line, value: value})
+
+	return true, nil
 }
 
 func scanToken() error {
@@ -145,6 +183,14 @@ func scanToken() error {
 		}
 
 	default:
+		isKeyword, err := scanKeywords(char)
+		if isKeyword {
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+		return fmt.Errorf("Unexpected token %c at line %d", char, line)
 	}
 	return nil
 
