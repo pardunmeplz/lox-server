@@ -10,6 +10,8 @@ func main() {
         +-
         */,
         // ++testing comments
+        " test error"
+        1232.2
         .
         `)
 
