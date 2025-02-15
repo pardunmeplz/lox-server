@@ -52,11 +52,11 @@ func scanNumber(char rune) (bool, error) {
 		return false, nil
 	}
 	start := current
-	for (len(*source) > current) && unicode.IsDigit(peek()) {
-		advance()
+	for (len(*source) > current) && unicode.IsDigit(peekScanner()) {
+		advanceScanner()
 	}
 
-	if !match('.') {
+	if !matchScanner('.') {
 		value, err := strconv.Atoi((*source)[start-1 : current])
 		if err != nil {
 			return true, err
@@ -65,8 +65,8 @@ func scanNumber(char rune) (bool, error) {
 		return true, nil
 	}
 
-	for (len(*source) > current) && unicode.IsDigit(peek()) {
-		advance()
+	for (len(*source) > current) && unicode.IsDigit(peekScanner()) {
+		advanceScanner()
 	}
 	value, err := strconv.ParseFloat((*source)[start-1:current], 64)
 	if err != nil {
@@ -83,8 +83,8 @@ func scanKeywords(char rune) (bool, error) {
 	}
 
 	start := current
-	for len(*source) > current && (unicode.IsDigit(peek()) || unicode.IsLetter(peek()) || peek() == '_') {
-		advance()
+	for len(*source) > current && (unicode.IsDigit(peekScanner()) || unicode.IsLetter(peekScanner()) || peekScanner() == '_') {
+		advanceScanner()
 	}
 	value := (*source)[start-1 : current]
 
@@ -100,8 +100,8 @@ func scanKeywords(char rune) (bool, error) {
 }
 
 func scanToken() error {
-	char := peek()
-	advance()
+	char := peekScanner()
+	advanceScanner()
 
 	isNum, err := scanNumber(char)
 	if err != nil {
@@ -137,46 +137,46 @@ func scanToken() error {
 	case '\n':
 		line++
 	case '/':
-		if match('/') {
-			for peekNext() != '\n' && len(*source) > current {
-				advance()
+		if matchScanner('/') {
+			for peekScannerNext() != '\n' && len(*source) > current {
+				advanceScanner()
 			}
 			return nil
 		}
 		tokens = append(tokens, token{tokenType: SLASH, line: line})
 	case '=':
-		if match('=') {
+		if matchScanner('=') {
 			tokens = append(tokens, token{tokenType: EQUALEQUAL, line: line})
 			return nil
 		}
 		tokens = append(tokens, token{tokenType: EQUAL, line: line})
 	case '!':
-		if match('=') {
+		if matchScanner('=') {
 			tokens = append(tokens, token{tokenType: BANGEQUAL, line: line})
 			return nil
 		}
 		tokens = append(tokens, token{tokenType: BANG, line: line})
 	case '<':
-		if match('=') {
+		if matchScanner('=') {
 			tokens = append(tokens, token{tokenType: LESSEQUAL, line: line})
 			return nil
 		}
 		tokens = append(tokens, token{tokenType: LESS, line: line})
 	case '>':
-		if match('=') {
+		if matchScanner('=') {
 			tokens = append(tokens, token{tokenType: GREATEREQUAL, line: line})
 			return nil
 		}
 		tokens = append(tokens, token{tokenType: GREATER, line: line})
 	case '"':
 		start := current
-		for len(*source)-1 > current && peek() != '"' {
-			if peek() == '\n' {
+		for len(*source)-1 > current && peekScanner() != '"' {
+			if peekScanner() == '\n' {
 				line++
 			}
-			advance()
+			advanceScanner()
 		}
-		err := consume('"', fmt.Sprintf("Missing End of string at line %d", line))
+		err := consumeScanner('"', fmt.Sprintf("Missing End of string at line %d", line))
 		tokens = append(tokens, token{tokenType: STRING, line: line, value: (*source)[start : current-1]})
 		if err != nil {
 			return err
@@ -196,28 +196,28 @@ func scanToken() error {
 
 }
 
-func advance() {
+func advanceScanner() {
 	current += 1
 }
 
-func peek() rune {
+func peekScanner() rune {
 	return rune((*source)[current])
 }
 
-func peekNext() rune {
+func peekScannerNext() rune {
 	return rune((*source)[current+1])
 }
 
-func match(char rune) bool {
+func matchScanner(char rune) bool {
 	if (*source)[current] == byte(char) {
-		advance()
+		advanceScanner()
 		return true
 	}
 	return false
 }
 
-func consume(char rune, err string) error {
-	if match(char) {
+func consumeScanner(char rune, err string) error {
+	if matchScanner(char) {
 		return nil
 	}
 	return fmt.Errorf("%s", err)
