@@ -26,7 +26,7 @@ func StartServer() {
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Split(split)
 	writer := os.Stdout
-	logger := getLogger("/log.txt")
+	logger := getLogger("log.txt")
 	logger.Print("start log" + time.Now().GoString())
 
 	for scanner.Scan() {

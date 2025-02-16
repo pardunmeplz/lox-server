@@ -48,6 +48,12 @@ func processRequest(request map[string]any) (map[string]any, error) {
 		}
 	case "initialized":
 		return nil, nil
+	case "textDocument/didOpen":
+		return nil, nil
+	case "textDocument/didClose":
+		return nil, nil
+	case "textDocument/didChange":
+		return nil, nil
 	}
 
 	return nil, fmt.Errorf("Invalid Method: %v", request["method"])

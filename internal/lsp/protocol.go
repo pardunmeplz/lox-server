@@ -35,7 +35,12 @@ func protocolInitialize(request map[string]any) (map[string]any, error) {
 		"jsonrpc": "2.0",
 		"id":      request["id"],
 		"result": map[string]any{
-			"capabilities": map[string]any{},
+			"capabilities": map[string]any{
+				"textDocumentSync": map[string]any{
+					"openClose": true,
+					"change":    1,
+				},
+			},
 			"serverInfo": map[string]any{
 				"name":    "LoxServer",
 				"version": "0.1.0",

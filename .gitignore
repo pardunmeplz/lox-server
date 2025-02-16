@@ -8,3 +8,5 @@
 *.prof
 ._*
 script.lox
+log.txt
+main
