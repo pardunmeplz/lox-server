@@ -1,15 +1,5 @@
 package lsp
 
-type Position struct {
-	line      uint
-	character uint
-}
-
-type Range struct {
-	start Position
-	end   Position
-}
-
 type Diagnostic struct {
 	/*
 	   1 = Error
@@ -17,13 +7,13 @@ type Diagnostic struct {
 	   3 = Info
 	   4 = Hint
 	*/
-	severity int
-	errRange Range `json:"range"`
-	message  string
+	Severity int    `json:"severity"`
+	ErrRange Range  `json:"range"`
+	Message  string `json:"message"`
 }
 
 type PublishDiagnosticParams struct {
-	uri         string
-	version     int
-	diagnostics Diagnostic
+	Uri         string     `json:"uri"`
+	Version     int        `json:"version"`
+	Diagnostics Diagnostic `json:"diagnostics"`
 }

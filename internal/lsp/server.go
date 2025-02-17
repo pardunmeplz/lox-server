@@ -14,37 +14,39 @@ import (
 var serverState struct {
 	shutdown    bool
 	initialized bool
+	writer      *os.File
+	logger      *log.Logger
 }
 
 func initializeServerState() {
 	serverState.initialized = false
 	serverState.shutdown = false
+	serverState.writer = os.Stdout
+	serverState.logger = getLogger("log.txt")
 }
 
 func StartServer() {
 	initializeServerState()
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Split(split)
-	writer := os.Stdout
-	logger := getLogger("log.txt")
-	logger.Print("start log" + time.Now().GoString())
+	serverState.logger.Print("start log" + time.Now().GoString())
 
 	for scanner.Scan() {
 		request := scanner.Text()
-		logger.Print(request)
+		serverState.logger.Print(request)
 
 		response, err := handleRequest(request)
 		if err != nil {
-			logger.Print(fmt.Sprintf("Error handling request: %v\n", err))
+			serverState.logger.Print(fmt.Sprintf("Error handling request: %v\n", err))
 			continue
 		}
 		if response == nil {
 			continue
 		}
 
-		logger.Print(string(response))
-		if err := writeMessage(writer, response); err != nil {
-			logger.Print(fmt.Sprintf("Error writing response: %v\n", err))
+		serverState.logger.Print(string(response))
+		if err := writeMessage(serverState.writer, response); err != nil {
+			serverState.logger.Print(fmt.Sprintf("Error writing response: %v\n", err))
 			break
 		}
 	}
