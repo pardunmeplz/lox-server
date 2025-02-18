@@ -4,10 +4,10 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -16,6 +16,7 @@ var serverState struct {
 	initialized bool
 	writer      *os.File
 	logger      *log.Logger
+	loggerMu    sync.Mutex
 }
 
 func initializeServerState() {
@@ -45,7 +46,7 @@ func StartServer() {
 		}
 
 		serverState.logger.Print(string(response))
-		if err := writeMessage(serverState.writer, response); err != nil {
+		if err := writeMessage(response); err != nil {
 			serverState.logger.Print(fmt.Sprintf("Error writing response: %v\n", err))
 			break
 		}
@@ -81,7 +82,11 @@ func getLogger(fileName string) *log.Logger {
 	return log.New(logfile, "\nPdun>> ", log.Ldate)
 }
 
-func writeMessage(writer io.Writer, response []byte) error {
-	_, err := writer.Write(response)
+func writeMessage(response []byte) error {
+	header := []byte(fmt.Sprintf("Content-Length: %d\r\n\r\n", len(response)))
+	serverState.loggerMu.Lock()
+	defer serverState.loggerMu.Unlock()
+
+	_, err := serverState.writer.Write(append(header, response...))
 	return err
 }

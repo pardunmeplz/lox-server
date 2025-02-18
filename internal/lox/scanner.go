@@ -13,22 +13,24 @@ type token struct {
 }
 
 var tokens []token
+var lexicalErrors []CompileError
 var line int = 0
+var currChar int = 0
 var current int = 0
 var source *string
 
-func scan(code string) ([]token, error) {
+func scan(code string) ([]token, []CompileError, error) {
 	source = &code
 
 	for len(*source) > current {
 		err := scanToken()
 		if err != nil {
-			return tokens, err
+			return tokens, lexicalErrors, err
 		}
 	}
 	tokens = append(tokens, token{tokenType: EOF, line: line})
 
-	return tokens, nil
+	return tokens, lexicalErrors, nil
 }
 
 var keywords map[string]int = map[string]int{
@@ -136,6 +138,7 @@ func scanToken() error {
 	case '\t':
 	case '\n':
 		line++
+		currChar = 0
 	case '/':
 		if matchScanner('/') {
 			for peekScannerNext() != '\n' && len(*source) > current {
@@ -173,14 +176,11 @@ func scanToken() error {
 		for len(*source)-1 > current && peekScanner() != '"' {
 			if peekScanner() == '\n' {
 				line++
+				currChar = 0
 			}
 			advanceScanner()
 		}
-		err := consumeScanner('"', fmt.Sprintf("Missing End of string at line %d", line))
 		tokens = append(tokens, token{tokenType: STRING, line: line, value: (*source)[start : current-1]})
-		if err != nil {
-			return err
-		}
 
 	default:
 		isKeyword, err := scanKeywords(char)
@@ -190,14 +190,16 @@ func scanToken() error {
 			}
 			return nil
 		}
-		return fmt.Errorf("Unexpected token %c at line %d", char, line)
+		lexicalErrors = append(lexicalErrors, CompileError{Line: line, Char: currChar, Message: fmt.Sprintf("Unexpected token %c at line %d", char, line)})
+		return nil
 	}
 	return nil
 
 }
 
 func advanceScanner() {
-	current += 1
+	currChar++
+	current++
 }
 
 func peekScanner() rune {
@@ -216,9 +218,9 @@ func matchScanner(char rune) bool {
 	return false
 }
 
-func consumeScanner(char rune, err string) error {
+func consumeScanner(char rune, err string) {
 	if matchScanner(char) {
-		return nil
+		return
 	}
-	return fmt.Errorf("%s", err)
+	lexicalErrors = append(lexicalErrors, CompileError{Line: line, Char: currChar, Message: fmt.Sprintf("%s", err)})
 }

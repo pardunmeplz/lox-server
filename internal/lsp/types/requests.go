@@ -17,3 +17,9 @@ type DidOpenTextDocumentParams struct {
 	TextDocument   TextDocumentItem               `json:"textDocument"`
 	ContentChanges TextDocumentContentChangeEvent `json:"contentChanges"`
 }
+
+type JsonRpcNotification struct {
+	JsonRpc string `json:"jsonRpc"`
+	Method  any    `json:"method"`
+	Params  any    `json:"params"`
+}

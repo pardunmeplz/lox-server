@@ -6,11 +6,11 @@ func ScanLoxCode(code string) {
 	fmt.Println(scan(code))
 }
 
-func FindErrors(code string) []error {
-	_, err := scan(code)
+func FindErrors(code string) ([]CompileError, error) {
+	_, codeErrors, err := scan(code)
 	if err == nil {
-		return nil
+		return nil, err
 	}
-	return []error{err}
+	return codeErrors, nil
 
 }

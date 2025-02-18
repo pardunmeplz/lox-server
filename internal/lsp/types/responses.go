@@ -13,7 +13,14 @@ type Diagnostic struct {
 }
 
 type PublishDiagnosticParams struct {
-	Uri         string     `json:"uri"`
-	Version     int        `json:"version"`
-	Diagnostics Diagnostic `json:"diagnostics"`
+	Uri         string       `json:"uri"`
+	Version     int          `json:"version"`
+	Diagnostics []Diagnostic `json:"diagnostics"`
+}
+
+type JsonRpcResponse struct {
+	JsonRpc string `json:"jsonRpc"`
+	Id      any    `json:"id"`
+	Result  any    `json:"result"`
+	Error   any    `json:"error"`
 }

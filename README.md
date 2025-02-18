@@ -35,5 +35,7 @@ go run cmd/lsp/main.go
 ---
 
 ### **💡 Why This Matters?**  
-It doesn't, This project is a **learning experience** in both **LSP development** and **Go programming**. It serves as an exploration of how to build a structured Go project from scratch.  
+It doesn't, This project is a **learning experience** in both **LSP development** and **Go programming**.
+This is both my first LSP and my first project writing go.
+It serves as an exploration of how to build a structured Go project from scratch.  
 

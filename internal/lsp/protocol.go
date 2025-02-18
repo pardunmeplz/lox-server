@@ -1,6 +1,9 @@
 package lsp
 
-import lsp "lox-server/internal/lsp/types"
+import (
+	"lox-server/internal/lox"
+	lsp "lox-server/internal/lsp/types"
+)
 
 func initializeCheck(request map[string]any) map[string]any {
 	if !serverState.initialized {
@@ -61,4 +64,40 @@ func protocolShutdown(request map[string]any) map[string]any {
 		"id":      request["id"],
 		"result":  nil,
 	}
+}
+
+func diagnosticNotification(code string, uri string, version int) (lsp.JsonRpcNotification, bool) {
+
+	parseErrors, _ := lox.FindErrors(code)
+	if parseErrors == nil || len(parseErrors) == 0 {
+		return lsp.JsonRpcNotification{}, false
+	}
+
+	diagnostic := []lsp.Diagnostic{}
+	for _, e := range parseErrors {
+		diagnostic = append(diagnostic, lsp.Diagnostic{
+			Severity: 1,
+			Message:  e.Message,
+			ErrRange: lsp.Range{
+				Start: lsp.Position{
+					Line:      uint(e.Line),
+					Character: uint(e.Char),
+				},
+				End: lsp.Position{
+					Line:      uint(e.Line),
+					Character: uint(e.Char),
+				},
+			},
+		})
+	}
+
+	result := lsp.PublishDiagnosticParams{Uri: uri, Version: version, Diagnostics: diagnostic}
+
+	responseObj := lsp.JsonRpcNotification{
+		JsonRpc: "2.0",
+		Params:  result,
+		Method:  "textDocument/publishDiagnostics",
+	}
+	return responseObj, true
+
 }
