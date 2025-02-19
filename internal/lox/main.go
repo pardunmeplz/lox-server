@@ -8,7 +8,7 @@ func ScanLoxCode(code string) {
 
 func FindErrors(code string) ([]CompileError, error) {
 	_, codeErrors, err := scan(code)
-	if err == nil {
+	if err != nil {
 		return nil, err
 	}
 	return codeErrors, nil

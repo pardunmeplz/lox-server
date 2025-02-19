@@ -70,8 +70,13 @@ func checkForErrors(request map[string]any) {
 	json.Unmarshal(params, &document)
 
 	// gen notificaion
-	responseObj, isError := diagnosticNotification(document.TextDocument.Text, document.TextDocument.Uri, document.TextDocument.Version)
+	responseObj, isError, err := diagnosticNotification(document.TextDocument.Text, document.TextDocument.Uri, document.TextDocument.Version)
+	if err != nil {
+		serverState.logger.Print(fmt.Sprintf("Parse Error: %v\n", err))
+		return
+	}
 	if !isError {
+		serverState.logger.Print("no errors found \n")
 		return
 	}
 

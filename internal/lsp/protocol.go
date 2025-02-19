@@ -66,11 +66,16 @@ func protocolShutdown(request map[string]any) map[string]any {
 	}
 }
 
-func diagnosticNotification(code string, uri string, version int) (lsp.JsonRpcNotification, bool) {
+func diagnosticNotification(code string, uri string, version int) (lsp.JsonRpcNotification, bool, error) {
 
-	parseErrors, _ := lox.FindErrors(code)
+	serverState.logger.Print("Pre Parse")
+	parseErrors, err := lox.FindErrors(code)
+	serverState.logger.Print("Post Parse")
+	if err != nil {
+		return lsp.JsonRpcNotification{}, false, err
+	}
 	if parseErrors == nil || len(parseErrors) == 0 {
-		return lsp.JsonRpcNotification{}, false
+		return lsp.JsonRpcNotification{}, false, nil
 	}
 
 	diagnostic := []lsp.Diagnostic{}
@@ -98,6 +103,6 @@ func diagnosticNotification(code string, uri string, version int) (lsp.JsonRpcNo
 		Params:  result,
 		Method:  "textDocument/publishDiagnostics",
 	}
-	return responseObj, true
+	return responseObj, true, nil
 
 }

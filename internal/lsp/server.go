@@ -34,7 +34,7 @@ func StartServer() {
 
 	for scanner.Scan() {
 		request := scanner.Text()
-		serverState.logger.Print(request)
+		serverState.logger.Print(" request >>" + request)
 
 		response, err := handleRequest(request)
 		if err != nil {
@@ -45,7 +45,7 @@ func StartServer() {
 			continue
 		}
 
-		serverState.logger.Print(string(response))
+		serverState.logger.Print(" response << " + string(response))
 		if err := writeMessage(response); err != nil {
 			serverState.logger.Print(fmt.Sprintf("Error writing response: %v\n", err))
 			break
