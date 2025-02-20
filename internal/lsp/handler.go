@@ -48,46 +48,79 @@ func processRequest(request map[string]any) (map[string]any, error) {
 	case "initialized":
 		return nil, nil
 	case "textDocument/didOpen":
-		go checkForErrors(request)
+		serverState.notificationChannel <- request
 		return nil, nil
 	case "textDocument/didClose":
 		return nil, nil
 	case "textDocument/didChange":
+		serverState.notificationChannel <- request
 		return nil, nil
 	}
 
 	return nil, fmt.Errorf("Invalid Method: %v", request["method"])
 }
 
-func checkForErrors(request map[string]any) {
-	// get values
-	var document lsp.DidOpenTextDocumentParams
+func processNotification(request map[string]any) []byte {
+	switch request["method"] {
+	case "textDocument/didOpen":
+		var document lsp.DidOpenTextDocumentParams
+		err := getRequestValues(&document, request)
+		if err != nil {
+			return nil
+		}
+		responseObj, isError, err := diagnosticNotification(document.TextDocument.Text, document.TextDocument.Uri, document.TextDocument.Version)
+		if err != nil {
+			serverState.logger.Print(fmt.Sprintf("Parse Error: %v\n", err))
+			return nil
+		}
+		if !isError {
+			serverState.logger.Print("no errors found \n")
+			return nil
+		}
+		response, err := json.Marshal(responseObj)
+		if err != nil {
+			serverState.logger.Print(fmt.Sprintf("invalid Response: %v\n", err))
+			return nil
+		}
+		return response
+
+	case "textDocument/didChange":
+		var document lsp.DidChangeTextDocumentParams
+		err := getRequestValues(&document, request)
+		if err != nil {
+			return nil
+		}
+		responseObj, isError, err := diagnosticNotification(document.ContentChanges[0].Text, document.TextDocument.Uri, document.TextDocument.Version)
+		if err != nil {
+			serverState.logger.Print(fmt.Sprintf("Parse Error: %v\n", err))
+			return nil
+		}
+		if !isError {
+			serverState.logger.Print("no errors found \n")
+			return nil
+		}
+		response, err := json.Marshal(responseObj)
+		if err != nil {
+			serverState.logger.Print(fmt.Sprintf("invalid Response: %v\n", err))
+			return nil
+		}
+		return response
+
+	}
+	return nil
+
+}
+
+func getRequestValues[T any](document *T, request map[string]any) error {
 	params, err := json.Marshal(request["params"])
 	if err != nil {
 		serverState.logger.Print(fmt.Sprintf("Marshal failed : %v", err))
-		return
+		return err
 	}
-	json.Unmarshal(params, &document)
-
-	// gen notificaion
-	responseObj, isError, err := diagnosticNotification(document.TextDocument.Text, document.TextDocument.Uri, document.TextDocument.Version)
+	err = json.Unmarshal(params, &document)
 	if err != nil {
-		serverState.logger.Print(fmt.Sprintf("Parse Error: %v\n", err))
-		return
+		serverState.logger.Print(fmt.Sprintf("Params Unmarshal failed : %v", err))
+		return err
 	}
-	if !isError {
-		serverState.logger.Print("no errors found \n")
-		return
-	}
-
-	// send notification
-	response, err := json.Marshal(responseObj)
-	if err != nil {
-		serverState.logger.Print(fmt.Sprintf("invalid Response: %v\n", err))
-		return
-	}
-	if err := writeMessage(response); err != nil {
-		serverState.logger.Print(fmt.Sprintf("Error writing response: %v\n", err))
-	}
-	serverState.logger.Print(string(response))
+	return nil
 }

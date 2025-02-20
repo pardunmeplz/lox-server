@@ -68,9 +68,7 @@ func protocolShutdown(request map[string]any) map[string]any {
 
 func diagnosticNotification(code string, uri string, version int) (lsp.JsonRpcNotification, bool, error) {
 
-	serverState.logger.Print("Pre Parse")
 	parseErrors, err := lox.FindErrors(code)
-	serverState.logger.Print("Post Parse")
 	if err != nil {
 		return lsp.JsonRpcNotification{}, false, err
 	}

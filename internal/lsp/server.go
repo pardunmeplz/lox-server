@@ -12,11 +12,12 @@ import (
 )
 
 var serverState struct {
-	shutdown    bool
-	initialized bool
-	writer      *os.File
-	logger      *log.Logger
-	loggerMu    sync.Mutex
+	shutdown            bool
+	initialized         bool
+	writer              *os.File
+	logger              *log.Logger
+	loggerMu            sync.Mutex
+	notificationChannel chan map[string]any
 }
 
 func initializeServerState() {
@@ -24,6 +25,7 @@ func initializeServerState() {
 	serverState.shutdown = false
 	serverState.writer = os.Stdout
 	serverState.logger = getLogger("log.txt")
+	serverState.notificationChannel = make(chan map[string]any)
 }
 
 func StartServer() {
@@ -31,6 +33,8 @@ func StartServer() {
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Split(split)
 	serverState.logger.Print("start log" + time.Now().GoString())
+
+	go startNotificationHandler()
 
 	for scanner.Scan() {
 		request := scanner.Text()
@@ -50,6 +54,22 @@ func StartServer() {
 			serverState.logger.Print(fmt.Sprintf("Error writing response: %v\n", err))
 			break
 		}
+	}
+}
+
+func startNotificationHandler() {
+	for request := range serverState.notificationChannel {
+
+		response := processNotification(request)
+		if response == nil {
+			continue
+		}
+
+		if err := writeMessage(response); err != nil {
+			serverState.logger.Print(fmt.Sprintf("Error writing response: %v\n", err))
+		}
+		serverState.logger.Print(string(response))
+
 	}
 }
 

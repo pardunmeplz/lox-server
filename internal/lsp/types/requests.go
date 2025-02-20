@@ -1,5 +1,14 @@
 package lsp
 
+type TextDocumentIdentifier struct {
+	Uri string `json:"uri"`
+}
+
+type VersionedTextDocumentIdentifier struct {
+	TextDocumentIdentifier
+	Version int `json:"version"`
+}
+
 type TextDocumentItem struct {
 	Uri        string `json:"uri"`
 	LanguageId string `json:"languageId"`
@@ -14,8 +23,12 @@ type TextDocumentContentChangeEvent struct {
 }
 
 type DidOpenTextDocumentParams struct {
-	TextDocument   TextDocumentItem               `json:"textDocument"`
-	ContentChanges TextDocumentContentChangeEvent `json:"contentChanges"`
+	TextDocument TextDocumentItem `json:"textDocument"`
+}
+
+type DidChangeTextDocumentParams struct {
+	TextDocument   VersionedTextDocumentIdentifier  `json:"textDocument"`
+	ContentChanges []TextDocumentContentChangeEvent `json:"contentChanges"`
 }
 
 type JsonRpcNotification struct {
