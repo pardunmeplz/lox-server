@@ -25,8 +25,8 @@ var scannerState struct {
 func initializeScanner(code *string) {
 	scannerState.tokens = make([]token, 0)
 	scannerState.lexicalErrors = make([]CompileError, 0)
-	scannerState.line = 0
-	scannerState.currChar = 0
+	scannerState.line = 1
+	scannerState.currChar = 1
 	scannerState.current = 0
 	scannerState.source = code
 
