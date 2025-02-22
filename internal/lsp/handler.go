@@ -1,11 +1,34 @@
 package lsp
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	lsp "lox-server/internal/lsp/types"
+	"strconv"
 	"syscall"
 )
+
+func split(data []byte, _ bool) (advance int, token []byte, err error) {
+	header, content, found := bytes.Cut(data, []byte{'\r', '\n', '\r', '\n'})
+
+	if !found {
+		return 0, nil, nil
+	}
+	contentLength, err := strconv.Atoi(string(header[len("Content-Length: "):]))
+	if err != nil {
+		return 0, nil, err
+	}
+
+	if len(content) < contentLength {
+		return 0, nil, nil
+	}
+
+	bodyStart := len(header) + 4
+	totalLength := len(header) + 4 + contentLength
+
+	return totalLength, data[bodyStart:totalLength], nil
+}
 
 func handleRequest(msg string) ([]byte, error) {
 	var requestObj map[string]any
@@ -68,13 +91,9 @@ func processNotification(request map[string]any) []byte {
 		if err != nil {
 			return nil
 		}
-		responseObj, isError, err := diagnosticNotification(document.TextDocument.Text, document.TextDocument.Uri, document.TextDocument.Version)
+		responseObj, err := diagnosticNotification(document.TextDocument.Text, document.TextDocument.Uri, document.TextDocument.Version)
 		if err != nil {
 			serverState.logger.Print(fmt.Sprintf("Parse Error: %v\n", err))
-			return nil
-		}
-		if !isError {
-			serverState.logger.Print("no errors found \n")
 			return nil
 		}
 		response, err := json.Marshal(responseObj)
@@ -90,13 +109,9 @@ func processNotification(request map[string]any) []byte {
 		if err != nil {
 			return nil
 		}
-		responseObj, isError, err := diagnosticNotification(document.ContentChanges[0].Text, document.TextDocument.Uri, document.TextDocument.Version)
+		responseObj, err := diagnosticNotification(document.ContentChanges[0].Text, document.TextDocument.Uri, document.TextDocument.Version)
 		if err != nil {
 			serverState.logger.Print(fmt.Sprintf("Parse Error: %v\n", err))
-			return nil
-		}
-		if !isError {
-			serverState.logger.Print("no errors found \n")
 			return nil
 		}
 		response, err := json.Marshal(responseObj)

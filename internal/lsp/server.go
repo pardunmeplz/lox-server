@@ -2,11 +2,9 @@ package lsp
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -71,27 +69,6 @@ func startNotificationHandler() {
 		serverState.logger.Print(string(response))
 
 	}
-}
-
-func split(data []byte, _ bool) (advance int, token []byte, err error) {
-	header, content, found := bytes.Cut(data, []byte{'\r', '\n', '\r', '\n'})
-
-	if !found {
-		return 0, nil, nil
-	}
-	contentLength, err := strconv.Atoi(string(header[len("Content-Length: "):]))
-	if err != nil {
-		return 0, nil, err
-	}
-
-	if len(content) < contentLength {
-		return 0, nil, nil
-	}
-
-	bodyStart := len(header) + 4
-	totalLength := len(header) + 4 + contentLength
-
-	return totalLength, data[bodyStart:totalLength], nil
 }
 
 func getLogger(fileName string) *log.Logger {
