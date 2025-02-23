@@ -26,7 +26,7 @@ func (expr *Expression) accept(visitor Visitor) {
 type Binary struct {
 	Left      Expr
 	Right     Expr
-	Operation rune
+	Operation int
 }
 
 func (expr *Binary) accept(visitor Visitor) {
@@ -35,7 +35,7 @@ func (expr *Binary) accept(visitor Visitor) {
 
 type Unary struct {
 	Expression Expr
-	Operation  rune
+	Operation  int
 }
 
 func (expr *Unary) accept(visitor Visitor) {

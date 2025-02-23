@@ -1,10 +1,24 @@
 package lox
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
-func ScanCode(code string) {
+func ParseCode(code string) error {
 	var scanner Scanner
-	fmt.Println(scanner.Scan(code))
+	var parser Parser
+	tokens, _, err := scanner.Scan(code)
+	if err != nil {
+		return err
+	}
+	ast := parser.Parse(tokens)
+	printable, err := (json.Marshal(ast))
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(printable))
+	return nil
 }
 
 func FindErrors(code string) ([]CompileError, error) {

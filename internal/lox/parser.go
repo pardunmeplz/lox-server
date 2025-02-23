@@ -51,43 +51,43 @@ func (parser *Parser) initialize(input []token) {
 	parser.currentToken = 0
 }
 
-func (parser *Parser) Parse(input []token) {
+func (parser *Parser) Parse(input []token) Expr {
 	parser.initialize(input)
+	return parser.expression()
 }
 
-func expression() {
+func (parser *Parser) expression() Expr {
+	return parser.term()
 }
 
-func (parser *Parser) term() {
+func (parser *Parser) term() Expr {
+	expr := parser.unary()
 
+	for token := parser.peekParser(); token.tokenType == PLUS || token.tokenType == MINUS; {
+		parser.advanceParser()
+		right := parser.unary()
+		expr = &Binary{Left: expr, Right: right, Operation: token.tokenType}
+	}
+
+	return expr
 }
 
 func (parser *Parser) factor() Expr {
-	left := parser.unary()
-	token := parser.peekParser()
+	expr := parser.unary()
 
-	switch token.tokenType {
-	case STAR:
-		right := parser.factor()
-		return &Binary{Left: left, Right: right, Operation: '*'}
-	case SLASH:
-		right := parser.factor()
-		return &Binary{Left: left, Right: right, Operation: '/'}
+	for token := parser.peekParser(); token.tokenType == STAR || token.tokenType == SLASH; {
+		parser.advanceParser()
+		right := parser.unary()
+		expr = &Binary{Left: expr, Right: right, Operation: token.tokenType}
 	}
-	return left
 
+	return expr
 }
 
 func (parser *Parser) unary() Expr {
-	token := parser.peekParser()
-
-	switch token.tokenType {
-	case BANG:
-		expr := parser.unary()
-		return &Unary{Expression: expr, Operation: '!'}
-	case MINUS:
-		expr := parser.unary()
-		return &Unary{Expression: expr, Operation: '-'}
+	if token := parser.peekParser(); token.tokenType == MINUS || token.tokenType == BANG {
+		parser.advanceParser()
+		return &Unary{Expression: parser.unary(), Operation: token.tokenType}
 	}
 	return parser.primary()
 }
