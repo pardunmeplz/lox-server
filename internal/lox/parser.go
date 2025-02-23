@@ -61,11 +61,11 @@ func (parser *Parser) expression() Expr {
 }
 
 func (parser *Parser) term() Expr {
-	expr := parser.unary()
+	expr := parser.factor()
 
-	for token := parser.peekParser(); token.tokenType == PLUS || token.tokenType == MINUS; {
+	for token := parser.peekParser(); token.tokenType == PLUS || token.tokenType == MINUS; token = parser.peekParser() {
 		parser.advanceParser()
-		right := parser.unary()
+		right := parser.factor()
 		expr = &Binary{Left: expr, Right: right, Operation: token.tokenType}
 	}
 
@@ -75,7 +75,7 @@ func (parser *Parser) term() Expr {
 func (parser *Parser) factor() Expr {
 	expr := parser.unary()
 
-	for token := parser.peekParser(); token.tokenType == STAR || token.tokenType == SLASH; {
+	for token := parser.peekParser(); token.tokenType == STAR || token.tokenType == SLASH; token = parser.peekParser() {
 		parser.advanceParser()
 		right := parser.unary()
 		expr = &Binary{Left: expr, Right: right, Operation: token.tokenType}

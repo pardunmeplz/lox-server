@@ -12,6 +12,7 @@ func ParseCode(code string) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println(tokens)
 	ast := parser.Parse(tokens)
 	printable, err := (json.Marshal(ast))
 	if err != nil {
