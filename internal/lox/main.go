@@ -2,12 +2,14 @@ package lox
 
 import "fmt"
 
-func ScanLoxCode(code string) {
-	fmt.Println(scan(code))
+func ScanCode(code string) {
+	var scanner Scanner
+	fmt.Println(scanner.Scan(code))
 }
 
 func FindErrors(code string) ([]CompileError, error) {
-	_, codeErrors, err := scan(code)
+	var scanner Scanner
+	_, codeErrors, err := scanner.Scan(code)
 	if err != nil {
 		return nil, err
 	}

@@ -41,33 +41,81 @@ package lox
    primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | "super" "." IDENTIFIER ;
 */
 
-var tokenList []token
-var currentToken int
+type Parser struct {
+	tokenList    []token
+	currentToken int
+}
 
-func parse(input []token) {
-	tokenList = input
+func (parser *Parser) initialize(input []token) {
+	parser.tokenList = input
+	parser.currentToken = 0
+}
+
+func (parser *Parser) Parse(input []token) {
+	parser.initialize(input)
 }
 
 func expression() {
+}
+
+func (parser *Parser) term() {
 
 }
 
-func primary() {
-	currToken := peekParser()
+func (parser *Parser) factor() Expr {
+	left := parser.unary()
+	token := parser.peekParser()
+
+	switch token.tokenType {
+	case STAR:
+		right := parser.factor()
+		return &Binary{Left: left, Right: right, Operation: '*'}
+	case SLASH:
+		right := parser.factor()
+		return &Binary{Left: left, Right: right, Operation: '/'}
+	}
+	return left
+
+}
+
+func (parser *Parser) unary() Expr {
+	token := parser.peekParser()
+
+	switch token.tokenType {
+	case BANG:
+		expr := parser.unary()
+		return &Unary{Expression: expr, Operation: '!'}
+	case MINUS:
+		expr := parser.unary()
+		return &Unary{Expression: expr, Operation: '-'}
+	}
+	return parser.primary()
+}
+
+func (parser *Parser) primary() Expr {
+
+	currToken := parser.peekParser()
+	parser.advanceParser()
 
 	switch currToken.tokenType {
 	case STRING:
-		return
+		return &Primary{ValType: "string", Value: currToken.value}
 	case NUMBER:
-
+		return &Primary{ValType: "number", Value: currToken.value}
+	case TRUE:
+		return &Primary{ValType: "boolean", Value: true}
+	case FALSE:
+		return &Primary{ValType: "boolean", Value: true}
+	case NIL:
+		return &Primary{ValType: "nil", Value: nil}
 	}
-
+	return &Primary{}
 }
 
-func advanceParser() {
-	currentToken++
+func (parser *Parser) advanceParser() {
+	parser.currentToken++
 }
 
-func peekParser() token {
-	return tokenList[currentToken]
+func (parser *Parser) peekParser() token {
+	return parser.tokenList[parser.currentToken]
 }

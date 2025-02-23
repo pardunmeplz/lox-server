@@ -13,7 +13,7 @@ type token struct {
 	character int
 }
 
-var scannerState struct {
+type Scanner struct {
 	tokens        []token
 	lexicalErrors []CompileError
 	line          int
@@ -22,21 +22,21 @@ var scannerState struct {
 	source        *string
 }
 
-func initializeScanner(code *string) {
+func (scannerState *Scanner) initializeScanner(code *string) {
 	scannerState.tokens = make([]token, 0)
 	scannerState.lexicalErrors = make([]CompileError, 0)
-	scannerState.line = 1
-	scannerState.currChar = 1
+	scannerState.line = 0
+	scannerState.currChar = 0
 	scannerState.current = 0
 	scannerState.source = code
 
 }
 
-func scan(code string) ([]token, []CompileError, error) {
-	initializeScanner(&code)
+func (scannerState *Scanner) Scan(code string) ([]token, []CompileError, error) {
+	scannerState.initializeScanner(&code)
 
 	for len(*scannerState.source) > scannerState.current {
-		err := scanToken()
+		err := scannerState.scanToken()
 		if err != nil {
 			return scannerState.tokens, scannerState.lexicalErrors, err
 		}
@@ -62,16 +62,16 @@ var keywords map[string]int = map[string]int{
 	"print": PRINT,
 }
 
-func scanNumber(char rune) (bool, error) {
+func (scannerState *Scanner) scanNumber(char rune) (bool, error) {
 	if !unicode.IsDigit(char) {
 		return false, nil
 	}
 	start := scannerState.current
-	for (len(*scannerState.source) > scannerState.current) && unicode.IsDigit(peekScanner()) {
-		advanceScanner()
+	for (len(*scannerState.source) > scannerState.current) && unicode.IsDigit(scannerState.peekScanner()) {
+		scannerState.advanceScanner()
 	}
 
-	if !matchScanner('.') {
+	if !scannerState.matchScanner('.') {
 		value, err := strconv.Atoi((*scannerState.source)[start-1 : scannerState.current])
 		if err != nil {
 			return true, err
@@ -80,8 +80,8 @@ func scanNumber(char rune) (bool, error) {
 		return true, nil
 	}
 
-	for (len(*scannerState.source) > scannerState.current) && unicode.IsDigit(peekScanner()) {
-		advanceScanner()
+	for (len(*scannerState.source) > scannerState.current) && unicode.IsDigit(scannerState.peekScanner()) {
+		scannerState.advanceScanner()
 	}
 	value, err := strconv.ParseFloat((*scannerState.source)[start-1:scannerState.current], 64)
 	if err != nil {
@@ -92,14 +92,14 @@ func scanNumber(char rune) (bool, error) {
 
 }
 
-func scanKeywords(char rune) (bool, error) {
+func (scannerState *Scanner) scanKeywords(char rune) (bool, error) {
 	if !unicode.IsLetter(char) {
 		return false, nil
 	}
 
 	start := scannerState.current
-	for len(*scannerState.source) > scannerState.current && (unicode.IsDigit(peekScanner()) || unicode.IsLetter(peekScanner()) || peekScanner() == '_') {
-		advanceScanner()
+	for len(*scannerState.source) > scannerState.current && (unicode.IsDigit(scannerState.peekScanner()) || unicode.IsLetter(scannerState.peekScanner()) || scannerState.peekScanner() == '_') {
+		scannerState.advanceScanner()
 	}
 	value := (*scannerState.source)[start-1 : scannerState.current]
 
@@ -114,11 +114,11 @@ func scanKeywords(char rune) (bool, error) {
 	return true, nil
 }
 
-func scanToken() error {
-	char := peekScanner()
-	advanceScanner()
+func (scannerState *Scanner) scanToken() error {
+	char := scannerState.peekScanner()
+	scannerState.advanceScanner()
 
-	isNum, err := scanNumber(char)
+	isNum, err := scannerState.scanNumber(char)
 	if err != nil {
 		return err
 	}
@@ -154,88 +154,88 @@ func scanToken() error {
 		scannerState.line++
 		scannerState.currChar = 0
 	case '/':
-		if matchScanner('/') {
-			for peekScannerNext() != '\n' && len(*scannerState.source) > scannerState.current {
-				advanceScanner()
+		if scannerState.matchScanner('/') {
+			for scannerState.peekScannerNext() != '\n' && len(*scannerState.source) > scannerState.current {
+				scannerState.advanceScanner()
 			}
 			return nil
 		}
 		scannerState.tokens = append(scannerState.tokens, token{tokenType: SLASH, line: scannerState.line, character: scannerState.currChar})
 	case '=':
-		if matchScanner('=') {
+		if scannerState.matchScanner('=') {
 			scannerState.tokens = append(scannerState.tokens, token{tokenType: EQUALEQUAL, line: scannerState.line, character: scannerState.currChar})
 			return nil
 		}
 		scannerState.tokens = append(scannerState.tokens, token{tokenType: EQUAL, line: scannerState.line, character: scannerState.currChar})
 	case '!':
-		if matchScanner('=') {
+		if scannerState.matchScanner('=') {
 			scannerState.tokens = append(scannerState.tokens, token{tokenType: BANGEQUAL, line: scannerState.line, character: scannerState.currChar})
 			return nil
 		}
 		scannerState.tokens = append(scannerState.tokens, token{tokenType: BANG, line: scannerState.line, character: scannerState.currChar})
 	case '<':
-		if matchScanner('=') {
+		if scannerState.matchScanner('=') {
 			scannerState.tokens = append(scannerState.tokens, token{tokenType: LESSEQUAL, line: scannerState.line, character: scannerState.currChar})
 			return nil
 		}
 		scannerState.tokens = append(scannerState.tokens, token{tokenType: LESS, line: scannerState.line, character: scannerState.currChar})
 	case '>':
-		if matchScanner('=') {
+		if scannerState.matchScanner('=') {
 			scannerState.tokens = append(scannerState.tokens, token{tokenType: GREATEREQUAL, line: scannerState.line, character: scannerState.currChar})
 			return nil
 		}
 		scannerState.tokens = append(scannerState.tokens, token{tokenType: GREATER, line: scannerState.line, character: scannerState.currChar})
 	case '"':
 		start := scannerState.current
-		for len(*scannerState.source)-1 > scannerState.current && peekScanner() != '"' {
-			if peekScanner() == '\n' {
+		for len(*scannerState.source)-1 > scannerState.current && scannerState.peekScanner() != '"' {
+			if scannerState.peekScanner() == '\n' {
 				scannerState.line++
 				scannerState.currChar = 0
 			}
-			advanceScanner()
+			scannerState.advanceScanner()
 		}
-		consumeScanner('"', fmt.Sprintf("Expected \" at end of string at line %d column %d", scannerState.line, scannerState.currChar))
+		scannerState.consumeScanner('"', fmt.Sprintf("Expected \" at end of string at line %d column %d", scannerState.line, scannerState.currChar))
 		scannerState.tokens = append(scannerState.tokens, token{tokenType: STRING, line: scannerState.line, character: scannerState.currChar, value: (*scannerState.source)[start : scannerState.current-1]})
 
 	default:
-		isKeyword, err := scanKeywords(char)
+		isKeyword, err := scannerState.scanKeywords(char)
 		if isKeyword {
 			if err != nil {
 				return err
 			}
 			return nil
 		}
-		scannerState.lexicalErrors = append(scannerState.lexicalErrors, CompileError{Line: scannerState.line, Char: scannerState.currChar, Message: fmt.Sprintf("Unexpected token %c at line %d column %d", char, scannerState.line, scannerState.currChar)})
+		scannerState.lexicalErrors = append(scannerState.lexicalErrors, CompileError{Line: scannerState.line, Char: scannerState.currChar, Message: fmt.Sprintf("Unexpected token %c at line %d column %d", char, scannerState.line+1, scannerState.currChar+1)})
 		return nil
 	}
 	return nil
 
 }
 
-func advanceScanner() {
+func (scannerState *Scanner) advanceScanner() {
 	scannerState.currChar++
 	scannerState.current++
 }
 
-func peekScanner() rune {
+func (scannerState *Scanner) peekScanner() rune {
 	return rune((*scannerState.source)[scannerState.current])
 }
 
-func peekScannerNext() rune {
+func (scannerState *Scanner) peekScannerNext() rune {
 	return rune((*scannerState.source)[scannerState.current+1])
 }
 
-func matchScanner(char rune) bool {
+func (scannerState *Scanner) matchScanner(char rune) bool {
 	if (*scannerState.source)[scannerState.current] == byte(char) {
-		advanceScanner()
+		scannerState.advanceScanner()
 		return true
 	}
 	return false
 }
 
-func consumeScanner(char rune, err string) {
-	if matchScanner(char) {
+func (scannerState *Scanner) consumeScanner(char rune, err string) {
+	if scannerState.matchScanner(char) {
 		return
 	}
-	scannerState.lexicalErrors = append(scannerState.lexicalErrors, CompileError{Line: scannerState.line, Char: scannerState.currChar, Message: fmt.Sprintf("%s", err)})
+	scannerState.lexicalErrors = append(scannerState.lexicalErrors, CompileError{Line: scannerState.line + 1, Char: scannerState.currChar + 1, Message: fmt.Sprintf("%s", err)})
 }
