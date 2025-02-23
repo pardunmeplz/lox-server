@@ -16,6 +16,6 @@ func startServer() {
 
 func testLanguage() {
 	lox.ParseCode(`
-        -2*5+2*4
+        (5+2)*4
         `)
 }

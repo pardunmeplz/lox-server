@@ -41,3 +41,11 @@ type Unary struct {
 func (expr *Unary) accept(visitor Visitor) {
 
 }
+
+type Group struct {
+	Expression Expr
+}
+
+func (expr *Group) accept(visitor Visitor) {
+
+}

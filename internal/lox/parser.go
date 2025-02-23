@@ -1,5 +1,7 @@
 package lox
 
+import "fmt"
+
 /*
    program        → declaration* EOF ;
 
@@ -108,12 +110,33 @@ func (parser *Parser) primary() Expr {
 		return &Primary{ValType: "boolean", Value: true}
 	case NIL:
 		return &Primary{ValType: "nil", Value: nil}
+	case PARANLEFT:
+		expr := parser.expression()
+		parser.consume(PARANRIGHT, fmt.Sprintf("Expected ')' at line %d character %d", currToken.line, currToken.character))
+		return &Group{Expression: expr}
 	}
 	return &Primary{}
 }
 
 func (parser *Parser) advanceParser() {
 	parser.currentToken++
+
+}
+
+func (parser *Parser) match(tokenType int) bool {
+	if tokenType == parser.peekParser().tokenType {
+		parser.advanceParser()
+		return true
+	}
+	return false
+}
+
+func (parser *Parser) consume(tokenType int, message string) {
+	if parser.match(tokenType) {
+		return
+	}
+	// todo: add error here
+
 }
 
 func (parser *Parser) peekParser() token {
