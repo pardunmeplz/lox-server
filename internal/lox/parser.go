@@ -59,7 +59,56 @@ func (parser *Parser) Parse(input []token) Expr {
 }
 
 func (parser *Parser) expression() Expr {
-	return parser.term()
+	return parser.logicalAnd()
+}
+
+func (parser *Parser) logicalOr() Expr {
+	expr := parser.logicalAnd()
+
+	for token := parser.peekParser(); token.tokenType == OR; token = parser.peekParser() {
+		parser.advanceParser()
+		right := parser.logicalAnd()
+		expr = &Binary{Left: expr, Right: right, Operation: token.tokenType}
+	}
+
+	return expr
+}
+
+func (parser *Parser) logicalAnd() Expr {
+	expr := parser.equality()
+
+	for token := parser.peekParser(); token.tokenType == AND; token = parser.peekParser() {
+		parser.advanceParser()
+		right := parser.equality()
+		expr = &Binary{Left: expr, Right: right, Operation: token.tokenType}
+	}
+
+	return expr
+}
+
+func (parser *Parser) equality() Expr {
+	expr := parser.comparison()
+
+	for token := parser.peekParser(); token.tokenType == EQUALEQUAL || token.tokenType == BANGEQUAL; token = parser.peekParser() {
+		parser.advanceParser()
+		right := parser.comparison()
+		expr = &Binary{Left: expr, Right: right, Operation: token.tokenType}
+	}
+
+	return expr
+}
+
+func (parser *Parser) comparison() Expr {
+	expr := parser.term()
+
+	for token := parser.peekParser(); token.tokenType == GREATER || token.tokenType == GREATEREQUAL ||
+		token.tokenType == LESS || token.tokenType == LESSEQUAL; token = parser.peekParser() {
+		parser.advanceParser()
+		right := parser.term()
+		expr = &Binary{Left: expr, Right: right, Operation: token.tokenType}
+	}
+
+	return expr
 }
 
 func (parser *Parser) term() Expr {
