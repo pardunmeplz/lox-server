@@ -45,24 +45,36 @@ import "fmt"
 
 type Parser struct {
 	tokenList    []token
+	errorList    []CompileError
 	currentToken int
 }
 
 func (parser *Parser) initialize(input []token) {
 	parser.tokenList = input
 	parser.currentToken = 0
+	parser.errorList = make([]CompileError, 0)
 }
 
-func (parser *Parser) Parse(input []token) Expr {
+func (parser *Parser) Parse(input []token) (Node, []CompileError) {
 	parser.initialize(input)
-	return parser.expression()
+	return parser.expression(), parser.errorList
 }
 
-func (parser *Parser) expression() Expr {
+func (parser *Parser) declaration() Node {
+	return parser.statement()
+}
+
+func (parser *Parser) statement() Node {
+	expr := parser.expression()
+	parser.consume(SEMICOLON, "Expected ; at end of statement")
+	return &ExpressionStmt{Expr: expr}
+}
+
+func (parser *Parser) expression() Node {
 	return parser.logicalAnd()
 }
 
-func (parser *Parser) logicalOr() Expr {
+func (parser *Parser) logicalOr() Node {
 	expr := parser.logicalAnd()
 
 	for token := parser.peekParser(); token.tokenType == OR; token = parser.peekParser() {
@@ -74,7 +86,7 @@ func (parser *Parser) logicalOr() Expr {
 	return expr
 }
 
-func (parser *Parser) logicalAnd() Expr {
+func (parser *Parser) logicalAnd() Node {
 	expr := parser.equality()
 
 	for token := parser.peekParser(); token.tokenType == AND; token = parser.peekParser() {
@@ -86,7 +98,7 @@ func (parser *Parser) logicalAnd() Expr {
 	return expr
 }
 
-func (parser *Parser) equality() Expr {
+func (parser *Parser) equality() Node {
 	expr := parser.comparison()
 
 	for token := parser.peekParser(); token.tokenType == EQUALEQUAL || token.tokenType == BANGEQUAL; token = parser.peekParser() {
@@ -98,7 +110,7 @@ func (parser *Parser) equality() Expr {
 	return expr
 }
 
-func (parser *Parser) comparison() Expr {
+func (parser *Parser) comparison() Node {
 	expr := parser.term()
 
 	for token := parser.peekParser(); token.tokenType == GREATER || token.tokenType == GREATEREQUAL ||
@@ -111,7 +123,7 @@ func (parser *Parser) comparison() Expr {
 	return expr
 }
 
-func (parser *Parser) term() Expr {
+func (parser *Parser) term() Node {
 	expr := parser.factor()
 
 	for token := parser.peekParser(); token.tokenType == PLUS || token.tokenType == MINUS; token = parser.peekParser() {
@@ -123,7 +135,7 @@ func (parser *Parser) term() Expr {
 	return expr
 }
 
-func (parser *Parser) factor() Expr {
+func (parser *Parser) factor() Node {
 	expr := parser.unary()
 
 	for token := parser.peekParser(); token.tokenType == STAR || token.tokenType == SLASH; token = parser.peekParser() {
@@ -135,7 +147,7 @@ func (parser *Parser) factor() Expr {
 	return expr
 }
 
-func (parser *Parser) unary() Expr {
+func (parser *Parser) unary() Node {
 	if token := parser.peekParser(); token.tokenType == MINUS || token.tokenType == BANG {
 		parser.advanceParser()
 		return &Unary{Expression: parser.unary(), Operation: token.tokenType}
@@ -143,7 +155,7 @@ func (parser *Parser) unary() Expr {
 	return parser.primary()
 }
 
-func (parser *Parser) primary() Expr {
+func (parser *Parser) primary() Node {
 
 	currToken := parser.peekParser()
 	parser.advanceParser()
@@ -184,8 +196,11 @@ func (parser *Parser) consume(tokenType int, message string) {
 	if parser.match(tokenType) {
 		return
 	}
-	// todo: add error here
+	parser.addError(message)
+}
 
+func (parser *Parser) addError(message string) {
+	parser.errorList = append(parser.errorList, CompileError{Message: message, Line: parser.peekParser().line, Char: parser.peekParser().character})
 }
 
 func (parser *Parser) peekParser() token {

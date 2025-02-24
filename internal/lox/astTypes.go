@@ -1,6 +1,6 @@
 package lox
 
-type Expr interface {
+type Node interface {
 	accept(Visitor)
 }
 
@@ -16,16 +16,17 @@ func (expr *Primary) accept(visitor Visitor) {
 
 }
 
-type Expression struct {
+type ExpressionStmt struct {
+	Expr Node
 }
 
-func (expr *Expression) accept(visitor Visitor) {
+func (expr *ExpressionStmt) accept(visitor Visitor) {
 
 }
 
 type Binary struct {
-	Left      Expr
-	Right     Expr
+	Left      Node
+	Right     Node
 	Operation int
 }
 
@@ -34,7 +35,7 @@ func (expr *Binary) accept(visitor Visitor) {
 }
 
 type Unary struct {
-	Expression Expr
+	Expression Node
 	Operation  int
 }
 
@@ -43,7 +44,7 @@ func (expr *Unary) accept(visitor Visitor) {
 }
 
 type Group struct {
-	Expression Expr
+	Expression Node
 }
 
 func (expr *Group) accept(visitor Visitor) {
