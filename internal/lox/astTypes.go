@@ -13,15 +13,6 @@ type Primary struct {
 }
 
 func (expr *Primary) accept(visitor Visitor) {
-
-}
-
-type ExpressionStmt struct {
-	Expr Node
-}
-
-func (expr *ExpressionStmt) accept(visitor Visitor) {
-
 }
 
 type Binary struct {
@@ -31,7 +22,6 @@ type Binary struct {
 }
 
 func (expr *Binary) accept(visitor Visitor) {
-
 }
 
 type Unary struct {
@@ -40,7 +30,6 @@ type Unary struct {
 }
 
 func (expr *Unary) accept(visitor Visitor) {
-
 }
 
 type Group struct {
@@ -48,5 +37,4 @@ type Group struct {
 }
 
 func (expr *Group) accept(visitor Visitor) {
-
 }

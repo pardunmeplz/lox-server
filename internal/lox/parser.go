@@ -1,6 +1,8 @@
 package lox
 
-import "fmt"
+import (
+	"fmt"
+)
 
 /*
    program        → declaration* EOF ;
@@ -24,7 +26,7 @@ import "fmt"
    whileStmt      → "while" "(" expression ")" statement;
    forStmt        → "for" "(" varDecl | exprStmt | ";" expression? ";" expression? ")" statement;
 
-   block          → "{" declaration "}";
+   block          → "{" declaration* "}";
    exprStmt       → expression ";" ;
    printStmt      → "print" expression ";" ;
 
@@ -55,9 +57,13 @@ func (parser *Parser) initialize(input []token) {
 	parser.errorList = make([]CompileError, 0)
 }
 
-func (parser *Parser) Parse(input []token) (Node, []CompileError) {
+func (parser *Parser) Parse(input []token) ([]Node, []CompileError) {
 	parser.initialize(input)
-	return parser.expression(), parser.errorList
+	program := make([]Node, 0)
+	for token := parser.peekParser(); token.tokenType != EOF; token = parser.peekParser() {
+		program = append(program, parser.declaration())
+	}
+	return program, parser.errorList
 }
 
 func (parser *Parser) declaration() Node {
@@ -65,9 +71,27 @@ func (parser *Parser) declaration() Node {
 }
 
 func (parser *Parser) statement() Node {
-	expr := parser.expression()
-	parser.consume(SEMICOLON, "Expected ; at end of statement")
-	return &ExpressionStmt{Expr: expr}
+	switch {
+	case parser.match(PRINT):
+		expr := parser.expression()
+		parser.consume(SEMICOLON, "Expected ; at end of statement")
+		return &PrintStmt{Expr: expr}
+	case parser.match(BRACELEFT):
+		return parser.block()
+	default:
+		expr := parser.expression()
+		parser.consume(SEMICOLON, "Expected ; at end of statement")
+		return &ExpressionStmt{Expr: expr}
+	}
+}
+
+func (parser *Parser) block() Node {
+	body := make([]Node, 0)
+	for token := parser.peekParser(); token.tokenType != EOF && token.tokenType != BRACERIGHT; token = parser.peekParser() {
+		body = append(body, parser.declaration())
+	}
+	parser.consume(BRACERIGHT, "Expected '}' at end of block")
+	return &BlockStmt{Body: body}
 }
 
 func (parser *Parser) expression() Node {
