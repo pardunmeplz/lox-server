@@ -20,3 +20,12 @@ type BlockStmt struct {
 
 func (expr *BlockStmt) accept(visitor Visitor) {
 }
+
+type IfStmt struct {
+	Condition Node
+	Then      Node
+	Else      Node
+}
+
+func (expr *IfStmt) accept(visitor Visitor) {
+}

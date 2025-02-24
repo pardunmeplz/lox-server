@@ -19,7 +19,7 @@ import (
 
    statement      → exprStmt | ifStmt | whileStmt | forStmt | returnStmt |  printStmt | block;
    ifStmt         → "if" "(" expression ")" statement
-                      (else statement)?;
+                      ("else" statement)?;
 
    returnStmt     → "return" expression? ";" ;
 
@@ -78,6 +78,8 @@ func (parser *Parser) statement() Node {
 		return &PrintStmt{Expr: expr}
 	case parser.match(BRACELEFT):
 		return parser.block()
+	case parser.match(IF):
+		return parser.ifStmt()
 	default:
 		expr := parser.expression()
 		parser.consume(SEMICOLON, "Expected ; at end of statement")
@@ -92,6 +94,21 @@ func (parser *Parser) block() Node {
 	}
 	parser.consume(BRACERIGHT, "Expected '}' at end of block")
 	return &BlockStmt{Body: body}
+}
+
+func (parser *Parser) ifStmt() Node {
+	parser.consume(PARANLEFT, "Expected '(' after if")
+	condition := parser.expression()
+	parser.consume(PARANRIGHT, "Expected ')' after condition")
+
+	thenBranch := parser.statement()
+	var elseBranch Node = nil
+
+	if parser.match(ELSE) {
+		elseBranch = parser.statement()
+	}
+
+	return &IfStmt{Condition: condition, Then: thenBranch, Else: elseBranch}
 }
 
 func (parser *Parser) expression() Node {

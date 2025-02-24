@@ -20,9 +20,9 @@ go run cmd/lsp/main.go
 ✅ **Handles `initialize` and `shutdown` requests**  
 
 ## **🛠️ Planned Features (TODO)**  
-- [ ] **Lexical Analysis** – Implement a scanner for Lox.  
+- [x] **Lexical Analysis** – Implement a scanner for Lox.  
 - [ ] **AST Parser** – Build a parser to support syntax-aware features.  
-- [ ] **Diagnostics (`textDocument/publishDiagnostics`)** – Show syntax errors in real-time.  
+- [x] **Diagnostics (`textDocument/publishDiagnostics`)** – Show syntax errors in real-time.  
 - [ ] **Hover (`textDocument/hover`)** – Provide information on symbols.  
 - [ ] **Go-to Definition (`textDocument/definition`)** – Jump to symbol definitions.  
 - [ ] **Auto-Completion (`textDocument/completion`)** – Suggest keywords and variables.  
