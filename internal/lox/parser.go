@@ -15,7 +15,7 @@ import (
 
    classDecl      → "class" IDENTIFIER ( "<" IDENTIFIER )? "{" function* "}" ;
 
-   varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
+    varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
 
    statement      → exprStmt | ifStmt | whileStmt | forStmt | returnStmt |  printStmt | block;
     ifStmt         → "if" "(" expression ")" statement
@@ -94,10 +94,21 @@ func (parser *Parser) statement() Node {
 		expr := parser.expression()
 		parser.consume(SEMICOLON, "Expected ; at end of statement")
 		return &PrintStmt{Expr: expr}
+
+	case parser.match(RETURN):
+		if parser.match(SEMICOLON) {
+			return &ReturnStmt{Expr: &Primary{ValType: "nil", Value: nil}}
+		}
+		expr := parser.expression()
+		parser.consume(SEMICOLON, "Expected ; at end of statement")
+		return &PrintStmt{Expr: expr}
+
 	case parser.match(BRACELEFT):
 		return parser.block()
+
 	case parser.match(IF):
 		return parser.ifStmt()
+
 	default:
 		expr := parser.expression()
 		parser.consume(SEMICOLON, "Expected ; at end of statement")

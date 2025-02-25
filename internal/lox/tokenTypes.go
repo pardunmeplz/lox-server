@@ -19,6 +19,7 @@ const (
 	BRACERIGHT
 	TRUE
 	FALSE
+	RETURN
 	NIL
 	IF
 	ELSE

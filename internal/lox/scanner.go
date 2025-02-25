@@ -47,19 +47,20 @@ func (scannerState *Scanner) Scan(code string) ([]Token, []CompileError, error) 
 }
 
 var keywords map[string]int = map[string]int{
-	"if":    IF,
-	"true":  TRUE,
-	"false": FALSE,
-	"nil":   NIL,
-	"else":  ELSE,
-	"for":   FOR,
-	"while": WHILE,
-	"fun":   FUN,
-	"class": CLASS,
-	"var":   VAR,
-	"and":   AND,
-	"or":    OR,
-	"print": PRINT,
+	"if":     IF,
+	"true":   TRUE,
+	"false":  FALSE,
+	"nil":    NIL,
+	"else":   ELSE,
+	"for":    FOR,
+	"while":  WHILE,
+	"fun":    FUN,
+	"class":  CLASS,
+	"var":    VAR,
+	"and":    AND,
+	"or":     OR,
+	"print":  PRINT,
+	"return": RETURN,
 }
 
 func (scannerState *Scanner) scanNumber(char rune) (bool, error) {

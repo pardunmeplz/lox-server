@@ -14,6 +14,13 @@ type PrintStmt struct {
 func (expr *PrintStmt) accept(visitor Visitor) {
 }
 
+type ReturnStmt struct {
+	Expr Node
+}
+
+func (expr *ReturnStmt) accept(visitor Visitor) {
+}
+
 type BlockStmt struct {
 	Body []Node
 }
