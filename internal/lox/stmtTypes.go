@@ -44,3 +44,11 @@ type VarDecl struct {
 
 func (expr *VarDecl) accept(visitor Visitor) {
 }
+
+type WhileStmt struct {
+	Condition Node
+	Then      Node
+}
+
+func (expr *WhileStmt) accept(visitor Visitor) {
+}

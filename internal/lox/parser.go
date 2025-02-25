@@ -21,9 +21,9 @@ import (
     ifStmt         → "if" "(" expression ")" statement
                       ("else" statement)?;
 
-   returnStmt     → "return" expression? ";" ;
+    returnStmt     → "return" expression? ";" ;
 
-   whileStmt      → "while" "(" expression ")" statement;
+    whileStmt      → "while" "(" expression ")" statement;
    forStmt        → "for" "(" varDecl | exprStmt | ";" expression? ";" expression? ")" statement;
 
     block          → "{" declaration* "}";
@@ -109,11 +109,18 @@ func (parser *Parser) statement() Node {
 	case parser.match(IF):
 		return parser.ifStmt()
 
+	case parser.match(WHILE):
+		return parser.whileStmt()
+
 	default:
-		expr := parser.expression()
-		parser.consume(SEMICOLON, "Expected ; at end of statement")
-		return &ExpressionStmt{Expr: expr}
+		return parser.exprStmt()
 	}
+}
+
+func (parser *Parser) exprStmt() Node {
+	expr := parser.expression()
+	parser.consume(SEMICOLON, "Expected ; at end of statement")
+	return &ExpressionStmt{Expr: expr}
 }
 
 func (parser *Parser) block() Node {
@@ -138,6 +145,53 @@ func (parser *Parser) ifStmt() Node {
 	}
 
 	return &IfStmt{Condition: condition, Then: thenBranch, Else: elseBranch}
+}
+
+func (parser *Parser) whileStmt() Node {
+	parser.consume(PARANLEFT, "Expected '(' after while")
+	condition := parser.expression()
+	parser.consume(PARANRIGHT, "Expected ')' after condition")
+
+	body := parser.statement()
+
+	return &WhileStmt{Condition: condition, Then: body}
+}
+
+func (parser *Parser) forStmt() Node {
+	forLoop := &BlockStmt{Body: make([]Node, 0)}
+
+	parser.consume(PARANLEFT, "Expected '(' after for")
+
+	if !parser.match(SEMICOLON) {
+		if parser.peekParser().TokenType == VAR {
+			forLoop.Body = append(forLoop.Body, parser.varDeclaration())
+		} else {
+			forLoop.Body = append(forLoop.Body, parser.exprStmt())
+		}
+	}
+
+	var condition Node = &Primary{ValType: "boolean", Value: true}
+	if parser.peekParser().TokenType != SEMICOLON {
+		condition = parser.expression()
+	}
+	parser.consume(SEMICOLON, "Expected ; after condition")
+
+	var assignment Node = nil
+	if parser.peekParser().TokenType != PARANRIGHT {
+		expr := parser.expression()
+		assignment = &ExpressionStmt{Expr: expr}
+	}
+
+	body := &BlockStmt{Body: make([]Node, 0)}
+	parser.consume(PARANRIGHT, "Expected ')' before body")
+
+	body.Body = append(body.Body, parser.statement())
+	if assignment != nil {
+		body.Body = append(body.Body, assignment)
+	}
+
+	forLoop.Body = append(forLoop.Body, &WhileStmt{Condition: condition, Then: body})
+	return forLoop
 }
 
 func (parser *Parser) expression() Node {

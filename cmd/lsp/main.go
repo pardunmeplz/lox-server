@@ -16,6 +16,8 @@ func startServer() {
 
 func testLanguage() {
 	lox.ParseCode(`
-      return ; 
+        while (true){
+            print 25;
+        }
         `)
 }
