@@ -29,3 +29,11 @@ type IfStmt struct {
 
 func (expr *IfStmt) accept(visitor Visitor) {
 }
+
+type VarDecl struct {
+	Identifier Token
+	Value      Node
+}
+
+func (expr *VarDecl) accept(visitor Visitor) {
+}

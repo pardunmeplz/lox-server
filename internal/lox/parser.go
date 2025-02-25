@@ -18,7 +18,7 @@ import (
    varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
 
    statement      → exprStmt | ifStmt | whileStmt | forStmt | returnStmt |  printStmt | block;
-   ifStmt         → "if" "(" expression ")" statement
+    ifStmt         → "if" "(" expression ")" statement
                       ("else" statement)?;
 
    returnStmt     → "return" expression? ";" ;
@@ -26,48 +26,66 @@ import (
    whileStmt      → "while" "(" expression ")" statement;
    forStmt        → "for" "(" varDecl | exprStmt | ";" expression? ";" expression? ")" statement;
 
-   block          → "{" declaration* "}";
-   exprStmt       → expression ";" ;
-   printStmt      → "print" expression ";" ;
+    block          → "{" declaration* "}";
+    exprStmt       → expression ";" ;
+    printStmt      → "print" expression ";" ;
 
-   expression     → assignment;
+    expression     → assignment;
    assignment     → (call ".")? IDENTIFIER "=" assignment | logicalOr;
-   logicalOr      → logicalAnd ( "or" logicalAnd)*;
-   logicalAnd     → equality ( "and" equality)*;
-   equality       → comparison ( ( "!=" | "==" ) comparison )* ;
-   comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
-   term           → factor ( ( "-" | "+" ) factor )* ;
-   factor         → unary ( ( "/" | "*" ) unary )* ;
-   unary          → ( "!" | "-" ) unary | primary ;
+    logicalOr      → logicalAnd ( "or" logicalAnd)*;
+    logicalAnd     → equality ( "and" equality)*;
+    equality       → comparison ( ( "!=" | "==" ) comparison )* ;
+    comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
+    term           → factor ( ( "-" | "+" ) factor )* ;
+    factor         → unary ( ( "/" | "*" ) unary )* ;
+    unary          → ( "!" | "-" ) unary | primary ;
    call           → primary ( "(" arguments? ")" )* | getExpression;
    getExpression  → primary ( "." IDENTIFIER )*;
    arguments      → expression ( "," expression )*;
-   primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | "super" "." IDENTIFIER ;
+    primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | "super" "." IDENTIFIER ;
 */
 
 type Parser struct {
-	tokenList    []token
+	tokenList    []Token
 	errorList    []CompileError
 	currentToken int
 }
 
-func (parser *Parser) initialize(input []token) {
+func (parser *Parser) initialize(input []Token) {
 	parser.tokenList = input
 	parser.currentToken = 0
 	parser.errorList = make([]CompileError, 0)
 }
 
-func (parser *Parser) Parse(input []token) ([]Node, []CompileError) {
+func (parser *Parser) Parse(input []Token) ([]Node, []CompileError) {
 	parser.initialize(input)
 	program := make([]Node, 0)
-	for token := parser.peekParser(); token.tokenType != EOF; token = parser.peekParser() {
+	for token := parser.peekParser(); token.TokenType != EOF; token = parser.peekParser() {
 		program = append(program, parser.declaration())
 	}
 	return program, parser.errorList
 }
 
 func (parser *Parser) declaration() Node {
-	return parser.statement()
+	switch {
+	case parser.match(VAR):
+		return parser.varDeclaration()
+	default:
+		return parser.statement()
+	}
+}
+
+func (parser *Parser) varDeclaration() Node {
+	identifier := parser.peekParser()
+	parser.consume(IDENTIFIER, "Expected identifier after var declaration")
+	var value Node = &Primary{ValType: "nil", Value: nil}
+	if parser.match(EQUAL) {
+		value = parser.expression()
+	}
+	parser.consume(SEMICOLON, "Expected ; at end of statement")
+
+	return &VarDecl{Identifier: identifier, Value: value}
+
 }
 
 func (parser *Parser) statement() Node {
@@ -89,7 +107,7 @@ func (parser *Parser) statement() Node {
 
 func (parser *Parser) block() Node {
 	body := make([]Node, 0)
-	for token := parser.peekParser(); token.tokenType != EOF && token.tokenType != BRACERIGHT; token = parser.peekParser() {
+	for token := parser.peekParser(); token.TokenType != EOF && token.TokenType != BRACERIGHT; token = parser.peekParser() {
 		body = append(body, parser.declaration())
 	}
 	parser.consume(BRACERIGHT, "Expected '}' at end of block")
@@ -118,10 +136,10 @@ func (parser *Parser) expression() Node {
 func (parser *Parser) logicalOr() Node {
 	expr := parser.logicalAnd()
 
-	for token := parser.peekParser(); token.tokenType == OR; token = parser.peekParser() {
+	for token := parser.peekParser(); token.TokenType == OR; token = parser.peekParser() {
 		parser.advanceParser()
 		right := parser.logicalAnd()
-		expr = &Binary{Left: expr, Right: right, Operation: token.tokenType}
+		expr = &Binary{Left: expr, Right: right, Operation: token.TokenType}
 	}
 
 	return expr
@@ -130,10 +148,10 @@ func (parser *Parser) logicalOr() Node {
 func (parser *Parser) logicalAnd() Node {
 	expr := parser.equality()
 
-	for token := parser.peekParser(); token.tokenType == AND; token = parser.peekParser() {
+	for token := parser.peekParser(); token.TokenType == AND; token = parser.peekParser() {
 		parser.advanceParser()
 		right := parser.equality()
-		expr = &Binary{Left: expr, Right: right, Operation: token.tokenType}
+		expr = &Binary{Left: expr, Right: right, Operation: token.TokenType}
 	}
 
 	return expr
@@ -142,10 +160,10 @@ func (parser *Parser) logicalAnd() Node {
 func (parser *Parser) equality() Node {
 	expr := parser.comparison()
 
-	for token := parser.peekParser(); token.tokenType == EQUALEQUAL || token.tokenType == BANGEQUAL; token = parser.peekParser() {
+	for token := parser.peekParser(); token.TokenType == EQUALEQUAL || token.TokenType == BANGEQUAL; token = parser.peekParser() {
 		parser.advanceParser()
 		right := parser.comparison()
-		expr = &Binary{Left: expr, Right: right, Operation: token.tokenType}
+		expr = &Binary{Left: expr, Right: right, Operation: token.TokenType}
 	}
 
 	return expr
@@ -154,11 +172,11 @@ func (parser *Parser) equality() Node {
 func (parser *Parser) comparison() Node {
 	expr := parser.term()
 
-	for token := parser.peekParser(); token.tokenType == GREATER || token.tokenType == GREATEREQUAL ||
-		token.tokenType == LESS || token.tokenType == LESSEQUAL; token = parser.peekParser() {
+	for token := parser.peekParser(); token.TokenType == GREATER || token.TokenType == GREATEREQUAL ||
+		token.TokenType == LESS || token.TokenType == LESSEQUAL; token = parser.peekParser() {
 		parser.advanceParser()
 		right := parser.term()
-		expr = &Binary{Left: expr, Right: right, Operation: token.tokenType}
+		expr = &Binary{Left: expr, Right: right, Operation: token.TokenType}
 	}
 
 	return expr
@@ -167,10 +185,10 @@ func (parser *Parser) comparison() Node {
 func (parser *Parser) term() Node {
 	expr := parser.factor()
 
-	for token := parser.peekParser(); token.tokenType == PLUS || token.tokenType == MINUS; token = parser.peekParser() {
+	for token := parser.peekParser(); token.TokenType == PLUS || token.TokenType == MINUS; token = parser.peekParser() {
 		parser.advanceParser()
 		right := parser.factor()
-		expr = &Binary{Left: expr, Right: right, Operation: token.tokenType}
+		expr = &Binary{Left: expr, Right: right, Operation: token.TokenType}
 	}
 
 	return expr
@@ -179,19 +197,19 @@ func (parser *Parser) term() Node {
 func (parser *Parser) factor() Node {
 	expr := parser.unary()
 
-	for token := parser.peekParser(); token.tokenType == STAR || token.tokenType == SLASH; token = parser.peekParser() {
+	for token := parser.peekParser(); token.TokenType == STAR || token.TokenType == SLASH; token = parser.peekParser() {
 		parser.advanceParser()
 		right := parser.unary()
-		expr = &Binary{Left: expr, Right: right, Operation: token.tokenType}
+		expr = &Binary{Left: expr, Right: right, Operation: token.TokenType}
 	}
 
 	return expr
 }
 
 func (parser *Parser) unary() Node {
-	if token := parser.peekParser(); token.tokenType == MINUS || token.tokenType == BANG {
+	if token := parser.peekParser(); token.TokenType == MINUS || token.TokenType == BANG {
 		parser.advanceParser()
-		return &Unary{Expression: parser.unary(), Operation: token.tokenType}
+		return &Unary{Expression: parser.unary(), Operation: token.TokenType}
 	}
 	return parser.primary()
 }
@@ -201,11 +219,11 @@ func (parser *Parser) primary() Node {
 	currToken := parser.peekParser()
 	parser.advanceParser()
 
-	switch currToken.tokenType {
+	switch currToken.TokenType {
 	case STRING:
-		return &Primary{ValType: "string", Value: currToken.value}
+		return &Primary{ValType: "string", Value: currToken.Value}
 	case NUMBER:
-		return &Primary{ValType: "number", Value: currToken.value}
+		return &Primary{ValType: "number", Value: currToken.Value}
 	case TRUE:
 		return &Primary{ValType: "boolean", Value: true}
 	case FALSE:
@@ -214,7 +232,7 @@ func (parser *Parser) primary() Node {
 		return &Primary{ValType: "nil", Value: nil}
 	case PARANLEFT:
 		expr := parser.expression()
-		parser.consume(PARANRIGHT, fmt.Sprintf("Expected ')' at line %d character %d", currToken.line, currToken.character))
+		parser.consume(PARANRIGHT, fmt.Sprintf("Expected ')' at line %d character %d", currToken.Line, currToken.Character))
 		return &Group{Expression: expr}
 	}
 	return &Primary{}
@@ -226,7 +244,7 @@ func (parser *Parser) advanceParser() {
 }
 
 func (parser *Parser) match(tokenType int) bool {
-	if tokenType == parser.peekParser().tokenType {
+	if tokenType == parser.peekParser().TokenType {
 		parser.advanceParser()
 		return true
 	}
@@ -241,9 +259,13 @@ func (parser *Parser) consume(tokenType int, message string) {
 }
 
 func (parser *Parser) addError(message string) {
-	parser.errorList = append(parser.errorList, CompileError{Message: message, Line: parser.peekParser().line, Char: parser.peekParser().character})
+	parser.errorList = append(parser.errorList, CompileError{Message: message, Line: parser.peekParser().Line, Char: parser.peekParser().Character})
 }
 
-func (parser *Parser) peekParser() token {
+func (parser *Parser) peekPrevious() Token {
+	return parser.tokenList[parser.currentToken-1]
+}
+
+func (parser *Parser) peekParser() Token {
 	return parser.tokenList[parser.currentToken]
 }

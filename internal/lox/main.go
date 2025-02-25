@@ -13,11 +13,13 @@ func ParseCode(code string) error {
 		return err
 	}
 	fmt.Println(tokens)
-	ast, _ := parser.Parse(tokens)
+
+	ast, errorList := parser.Parse(tokens)
 	printable, err := (json.Marshal(ast))
 	if err != nil {
 		return err
 	}
+	fmt.Println(errorList)
 	fmt.Println(string(printable))
 	return nil
 }
