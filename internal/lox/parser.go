@@ -112,6 +112,9 @@ func (parser *Parser) statement() Node {
 	case parser.match(WHILE):
 		return parser.whileStmt()
 
+	case parser.match(FOR):
+		return parser.forStmt()
+
 	default:
 		return parser.exprStmt()
 	}
@@ -158,23 +161,22 @@ func (parser *Parser) whileStmt() Node {
 }
 
 func (parser *Parser) forStmt() Node {
-	forLoop := &BlockStmt{Body: make([]Node, 0)}
-
 	parser.consume(PARANLEFT, "Expected '(' after for")
 
+	var initializer Node = nil
 	if !parser.match(SEMICOLON) {
-		if parser.peekParser().TokenType == VAR {
-			forLoop.Body = append(forLoop.Body, parser.varDeclaration())
+		if parser.match(VAR) {
+			initializer = parser.varDeclaration()
 		} else {
-			forLoop.Body = append(forLoop.Body, parser.exprStmt())
+			initializer = parser.exprStmt()
 		}
 	}
 
 	var condition Node = &Primary{ValType: "boolean", Value: true}
-	if parser.peekParser().TokenType != SEMICOLON {
+	if !parser.match(SEMICOLON) {
 		condition = parser.expression()
+		parser.consume(SEMICOLON, "Expected ; after condition")
 	}
-	parser.consume(SEMICOLON, "Expected ; after condition")
 
 	var assignment Node = nil
 	if parser.peekParser().TokenType != PARANRIGHT {
@@ -182,16 +184,19 @@ func (parser *Parser) forStmt() Node {
 		assignment = &ExpressionStmt{Expr: expr}
 	}
 
-	body := &BlockStmt{Body: make([]Node, 0)}
 	parser.consume(PARANRIGHT, "Expected ')' before body")
 
-	body.Body = append(body.Body, parser.statement())
+	loop := &WhileStmt{Condition: condition, Then: parser.statement()}
+
 	if assignment != nil {
-		body.Body = append(body.Body, assignment)
+		loop.Then = &BlockStmt{Body: []Node{loop.Then, assignment}}
 	}
 
-	forLoop.Body = append(forLoop.Body, &WhileStmt{Condition: condition, Then: body})
-	return forLoop
+	if initializer == nil {
+		return loop
+	}
+
+	return &BlockStmt{Body: []Node{initializer, loop}}
 }
 
 func (parser *Parser) expression() Node {
