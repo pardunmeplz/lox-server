@@ -52,3 +52,11 @@ type WhileStmt struct {
 
 func (expr *WhileStmt) accept(visitor Visitor) {
 }
+
+type AssignStmt struct {
+	Value      Node
+	Identifier Node
+}
+
+func (expr *AssignStmt) accept(visitor Visitor) {
+}

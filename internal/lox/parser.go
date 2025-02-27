@@ -17,21 +17,21 @@ import (
 
     varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
 
-   statement      → exprStmt | ifStmt | whileStmt | forStmt | returnStmt |  printStmt | block;
+    statement      → exprStmt | ifStmt | whileStmt | forStmt | returnStmt |  printStmt | block;
     ifStmt         → "if" "(" expression ")" statement
                       ("else" statement)?;
 
     returnStmt     → "return" expression? ";" ;
 
     whileStmt      → "while" "(" expression ")" statement;
-   forStmt        → "for" "(" varDecl | exprStmt | ";" expression? ";" expression? ")" statement;
+    forStmt        → "for" "(" varDecl | exprStmt | ";" expression? ";" expression? ")" statement;
 
     block          → "{" declaration* "}";
     exprStmt       → expression ";" ;
     printStmt      → "print" expression ";" ;
 
     expression     → assignment;
-   assignment     → (call ".")? IDENTIFIER "=" assignment | logicalOr;
+    assignment     → (call ".")? IDENTIFIER "=" assignment | logicalOr;
     logicalOr      → logicalAnd ( "or" logicalAnd)*;
     logicalAnd     → equality ( "and" equality)*;
     equality       → comparison ( ( "!=" | "==" ) comparison )* ;
@@ -178,18 +178,18 @@ func (parser *Parser) forStmt() Node {
 		parser.consume(SEMICOLON, "Expected ; after condition")
 	}
 
-	var assignment Node = nil
+	var assign Node = nil
 	if parser.peekParser().TokenType != PARANRIGHT {
 		expr := parser.expression()
-		assignment = &ExpressionStmt{Expr: expr}
+		assign = &ExpressionStmt{Expr: expr}
 	}
 
 	parser.consume(PARANRIGHT, "Expected ')' before body")
 
 	loop := &WhileStmt{Condition: condition, Then: parser.statement()}
 
-	if assignment != nil {
-		loop.Then = &BlockStmt{Body: []Node{loop.Then, assignment}}
+	if assign != nil {
+		loop.Then = &BlockStmt{Body: []Node{loop.Then, assign}}
 	}
 
 	if initializer == nil {
@@ -200,7 +200,25 @@ func (parser *Parser) forStmt() Node {
 }
 
 func (parser *Parser) expression() Node {
-	return parser.logicalAnd()
+	return parser.assignment()
+}
+
+func (parser *Parser) assignment() Node {
+	expr := parser.logicalOr()
+
+	if parser.match(EQUAL) {
+
+		token := parser.peekPrevious()
+		value := parser.assignment()
+
+		variable, ok := expr.(*Variable)
+		if !ok {
+			parser.addErrorAt("Invalid assignment target", token.Line, token.Character)
+			return expr
+		}
+		expr = &AssignStmt{Identifier: variable, Value: value}
+	}
+	return expr
 }
 
 func (parser *Parser) logicalOr() Node {
@@ -300,6 +318,8 @@ func (parser *Parser) primary() Node {
 		return &Primary{ValType: "boolean", Value: true}
 	case NIL:
 		return &Primary{ValType: "nil", Value: nil}
+	case IDENTIFIER:
+		return &Variable{Identifier: currToken}
 	case PARANLEFT:
 		expr := parser.expression()
 		parser.consume(PARANRIGHT, fmt.Sprintf("Expected ')' at line %d character %d", currToken.Line, currToken.Character))
@@ -332,10 +352,21 @@ func (parser *Parser) addError(message string) {
 	parser.errorList = append(parser.errorList, CompileError{Message: message, Line: parser.peekParser().Line, Char: parser.peekParser().Character})
 }
 
+func (parser *Parser) addErrorAt(message string, line int, char int) {
+	parser.errorList = append(parser.errorList, CompileError{Message: message, Line: line, Char: char})
+}
+
 func (parser *Parser) peekPrevious() Token {
 	return parser.tokenList[parser.currentToken-1]
 }
 
 func (parser *Parser) peekParser() Token {
 	return parser.tokenList[parser.currentToken]
+}
+
+func (parser *Parser) peekNext() (Token, bool) {
+	if len(parser.tokenList) >= parser.currentToken+1 {
+		return Token{}, false
+	}
+	return parser.tokenList[parser.currentToken+1], true
 }

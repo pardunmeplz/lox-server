@@ -38,3 +38,10 @@ type Group struct {
 
 func (expr *Group) accept(visitor Visitor) {
 }
+
+type Variable struct {
+	Identifier Token
+}
+
+func (expr *Variable) accept(visitor Visitor) {
+}

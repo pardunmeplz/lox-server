@@ -16,7 +16,7 @@ func startServer() {
 
 func testLanguage() {
 	lox.ParseCode(`
-        for (var x = 12; false; x + 3){
+        for (var x = 12; false;8 = x + 3){
             print 25;
         }
         `)
