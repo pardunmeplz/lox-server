@@ -53,3 +53,11 @@ type Assignment struct {
 
 func (expr *Assignment) accept(visitor Visitor) {
 }
+
+type Call struct {
+	Callee   Node
+	Argument []Node
+}
+
+func (expr *Call) accept(visitor Visitor) {
+}

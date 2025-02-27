@@ -38,7 +38,7 @@ import (
     comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
     term           → factor ( ( "-" | "+" ) factor )* ;
     factor         → unary ( ( "/" | "*" ) unary )* ;
-    unary          → ( "!" | "-" ) unary | primary ;
+    unary          → ( "!" | "-" ) unary | call ;
    call           → primary ( "(" arguments? ")" )* | getExpression;
    getExpression  → primary ( "." IDENTIFIER )*;
    arguments      → expression ( "," expression )*;
@@ -299,7 +299,40 @@ func (parser *Parser) unary() Node {
 		parser.advanceParser()
 		return &Unary{Expression: parser.unary(), Operation: token.TokenType}
 	}
-	return parser.primary()
+	return parser.call()
+}
+
+func (parser *Parser) call() Node {
+	expr := parser.primary()
+
+	for parser.match(PARANLEFT) {
+		expr = parser.finishCall(expr)
+
+	}
+
+	return expr
+}
+
+func (parser *Parser) finishCall(callee Node) Node {
+	if parser.match(PARANRIGHT) {
+		return &Call{Callee: callee, Argument: make([]Node, 0)}
+	}
+	arguments := parser.arguments()
+	parser.consume(PARANRIGHT, "Expected ')' and end of function call")
+	if len(arguments) > 255 {
+		parser.addError("Can't have more than 255 arguments")
+	}
+	return &Call{Callee: callee, Argument: arguments}
+}
+
+func (parser *Parser) arguments() []Node {
+	response := make([]Node, 0)
+	response = append(response, parser.expression())
+	for parser.match(COMMA) {
+		response = append(response, parser.expression())
+	}
+
+	return response
 }
 
 func (parser *Parser) primary() Node {
