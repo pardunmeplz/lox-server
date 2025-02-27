@@ -216,7 +216,7 @@ func (parser *Parser) assignment() Node {
 			parser.addErrorAt("Invalid assignment target", token.Line, token.Character)
 			return expr
 		}
-		expr = &AssignStmt{Identifier: variable, Value: value}
+		expr = &Assignment{Identifier: variable, Value: value}
 	}
 	return expr
 }

@@ -45,3 +45,11 @@ type Variable struct {
 
 func (expr *Variable) accept(visitor Visitor) {
 }
+
+type Assignment struct {
+	Value      Node
+	Identifier Node
+}
+
+func (expr *Assignment) accept(visitor Visitor) {
+}
