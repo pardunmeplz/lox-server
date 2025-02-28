@@ -46,6 +46,20 @@ type Variable struct {
 func (expr *Variable) accept(visitor Visitor) {
 }
 
+type This struct {
+	Identifier Token
+}
+
+func (expr *This) accept(visitor Visitor) {
+}
+
+type Super struct {
+	Identifier Token
+}
+
+func (expr *Super) accept(visitor Visitor) {
+}
+
 type Assignment struct {
 	Value      Node
 	Identifier Node

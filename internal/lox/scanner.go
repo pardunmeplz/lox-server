@@ -60,6 +60,8 @@ var keywords map[string]int = map[string]int{
 	"and":    AND,
 	"or":     OR,
 	"print":  PRINT,
+	"this":   THIS,
+	"super":  SUPER,
 	"return": RETURN,
 }
 

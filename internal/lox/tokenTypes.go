@@ -29,6 +29,8 @@ const (
 	CLASS
 	VAR
 	AND
+	THIS
+	SUPER
 	OR
 	PRINT
 	NUMBER
