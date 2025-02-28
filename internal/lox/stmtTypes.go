@@ -52,3 +52,12 @@ type WhileStmt struct {
 
 func (expr *WhileStmt) accept(visitor Visitor) {
 }
+
+type FuncDecl struct {
+	Name       Token
+	Body       Node
+	Parameters []Node
+}
+
+func (expr *FuncDecl) accept(visitor Visitor) {
+}

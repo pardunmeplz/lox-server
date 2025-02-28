@@ -9,9 +9,9 @@ import (
 
    declaration    → varDeclaration | statement | funcDecl | classDecl ;
 
-   funcDecl       → "fun" function;
-   function       → IDENTIFIER "(" parameters? ")" block;
-   parameters     → IDENTIFIER ( "," IDENTIFIER )*;
+    funcDecl       → "fun" function;
+    function       → IDENTIFIER "(" parameters? ")" block;
+    parameters     → IDENTIFIER ( "," IDENTIFIER )*;
 
    classDecl      → "class" IDENTIFIER ( "<" IDENTIFIER )? "{" function* "}" ;
 
@@ -39,7 +39,7 @@ import (
     term           → factor ( ( "-" | "+" ) factor )* ;
     factor         → unary ( ( "/" | "*" ) unary )* ;
     unary          → ( "!" | "-" ) unary | call ;
-   call           → primary ( "(" arguments? ")" )* | getExpression;
+    call           → primary ( "(" arguments? ")" )* | getExpression;
    getExpression  → primary ( "." IDENTIFIER )*;
    arguments      → expression ( "," expression )*;
     primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | "super" "." IDENTIFIER ;
@@ -70,6 +70,8 @@ func (parser *Parser) declaration() Node {
 	switch {
 	case parser.match(VAR):
 		return parser.varDeclaration()
+	case parser.match(FUN):
+		return parser.funcDeclaration()
 	default:
 		return parser.statement()
 	}
@@ -85,6 +87,40 @@ func (parser *Parser) varDeclaration() Node {
 	parser.consume(SEMICOLON, "Expected ; at end of statement")
 
 	return &VarDecl{Identifier: identifier, Value: value}
+
+}
+
+func (parser *Parser) funcDeclaration() Node {
+	identifier := parser.peekParser()
+	parser.consume(IDENTIFIER, "Expected identifier for function name")
+
+	parser.consume(PARANLEFT, "Expected ( after function name")
+	parameters := make([]Node, 0)
+	if !parser.match(PARANRIGHT) {
+		parameters = parser.parameters()
+	}
+
+	parser.consume(BRACELEFT, "Expected { at start of function body")
+	body := parser.block()
+
+	return &FuncDecl{Name: identifier, Body: body, Parameters: parameters}
+
+}
+
+func (parser *Parser) parameters() []Node {
+	parameters := make([]Node, 0)
+
+	parser.consume(IDENTIFIER, "Expected Parameter Name")
+	parameters = append(parameters, &Variable{Identifier: parser.peekPrevious()})
+
+	for parser.match(COMMA) {
+		parser.consume(IDENTIFIER, "Expected Parameter Name")
+		parameters = append(parameters, &Variable{Identifier: parser.peekPrevious()})
+	}
+
+	parser.consume(PARANRIGHT, "Expected ')' before function body")
+
+	return parameters
 
 }
 
