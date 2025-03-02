@@ -22,6 +22,10 @@ go run cmd/lsp/main.go
 ## **🛠️ Planned Features (TODO)**  
 - [x] **Lexical Analysis** – Implement a scanner for Lox.  
 - [ ] **AST Parser** – Build a parser to support syntax-aware features.  
+    - [x] **Parsing Tokens** - Parse all the lox tokens to a valid AST
+    - [ ] **Resolution Analysis** - Check for scope issues and resolve variables
+    - [ ] **Type Checks** - Do statically viable type checks
+    - [ ] **Panic - Recover** - Ignore errors caused by a preceding error to avoid unnecessary error reporting 
 - [x] **Diagnostics (`textDocument/publishDiagnostics`)** – Show syntax errors in real-time.  
 - [ ] **Hover (`textDocument/hover`)** – Provide information on symbols.  
 - [ ] **Go-to Definition (`textDocument/definition`)** – Jump to symbol definitions.  

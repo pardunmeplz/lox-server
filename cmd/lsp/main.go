@@ -6,8 +6,8 @@ import (
 )
 
 func main() {
-	//startServer()
-	testLanguage()
+	startServer()
+	//testLanguage()
 }
 
 func startServer() {

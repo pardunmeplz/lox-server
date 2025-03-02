@@ -26,10 +26,14 @@ func ParseCode(code string) error {
 
 func FindErrors(code string) ([]CompileError, error) {
 	var scanner Scanner
-	_, codeErrors, err := scanner.Scan(code)
+	var parser Parser
+	tokens, codeErrors, err := scanner.Scan(code)
 	if err != nil {
 		return nil, err
 	}
-	return codeErrors, nil
+
+	_, parseErrors := parser.Parse(tokens)
+
+	return append(codeErrors, parseErrors...), nil
 
 }
