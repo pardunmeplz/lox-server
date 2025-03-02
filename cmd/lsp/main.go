@@ -16,11 +16,11 @@ func startServer() {
 
 func testLanguage() {
 	lox.ParseCode(`
-        fun testing(){
-            return 12;
-        }
-        for (var x = 12; false;x = x + 3){
-           testing(12, 55, brandon); 
+        class myclass {
+            testmethod(){
+            var x = 12;
+            return x;
+            }
         }
         `)
 }

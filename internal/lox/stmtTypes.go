@@ -61,3 +61,11 @@ type FuncDecl struct {
 
 func (expr *FuncDecl) accept(visitor Visitor) {
 }
+
+type ClassDecl struct {
+	Name Token
+	Body []Node
+}
+
+func (expr *ClassDecl) accept(visitor Visitor) {
+}

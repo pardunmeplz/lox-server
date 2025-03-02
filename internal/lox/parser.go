@@ -72,9 +72,30 @@ func (parser *Parser) declaration() Node {
 		return parser.varDeclaration()
 	case parser.match(FUN):
 		return parser.funcDeclaration()
+	case parser.match(CLASS):
+		return parser.classDeclaration()
 	default:
 		return parser.statement()
 	}
+}
+
+func (parser *Parser) classDeclaration() Node {
+	identifier := parser.peekParser()
+	parser.consume(IDENTIFIER, "Expected identifier for class name")
+
+	parser.consume(BRACELEFT, "Expected '{' before class body")
+	methods := make([]Node, 0)
+	for token := parser.peekParser().TokenType; token != BRACERIGHT && token != EOF; token = parser.peekParser().TokenType {
+		method := parser.funcDeclaration()
+		if method == nil {
+			continue
+		}
+		methods = append(methods, method)
+	}
+
+	parser.consume(BRACERIGHT, "Expect '}' at end of class declaration")
+
+	return &ClassDecl{Body: methods, Name: identifier}
 }
 
 func (parser *Parser) varDeclaration() Node {
