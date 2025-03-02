@@ -83,6 +83,13 @@ func (parser *Parser) classDeclaration() Node {
 	identifier := parser.peekParser()
 	parser.consume(IDENTIFIER, "Expected identifier for class name")
 
+	var parent *Token
+	if parser.match(LESS) {
+		token := parser.peekParser()
+		parser.consume(IDENTIFIER, "Expected identifier for class name")
+		parent = &token
+	}
+
 	parser.consume(BRACELEFT, "Expected '{' before class body")
 	methods := make([]Node, 0)
 	for token := parser.peekParser().TokenType; token != BRACERIGHT && token != EOF; token = parser.peekParser().TokenType {
@@ -95,7 +102,7 @@ func (parser *Parser) classDeclaration() Node {
 
 	parser.consume(BRACERIGHT, "Expect '}' at end of class declaration")
 
-	return &ClassDecl{Body: methods, Name: identifier}
+	return &ClassDecl{Body: methods, Name: identifier, Parent: parent}
 }
 
 func (parser *Parser) varDeclaration() Node {
