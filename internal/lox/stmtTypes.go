@@ -63,8 +63,9 @@ func (expr *FuncDecl) accept(visitor Visitor) {
 }
 
 type ClassDecl struct {
-	Name Token
-	Body []Node
+	Name   Token
+	Parent *Token
+	Body   []Node
 }
 
 func (expr *ClassDecl) accept(visitor Visitor) {
