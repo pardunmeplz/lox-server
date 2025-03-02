@@ -19,7 +19,7 @@ func testLanguage() {
         class myclass {
             testmethod(){
             var x = 12;
-            return x;
+            return x.testvariable.anotherProp;
             }
         }
         `)

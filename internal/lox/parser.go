@@ -9,40 +9,40 @@ import (
 
    declaration    → varDeclaration | statement | funcDecl | classDecl ;
 
-    funcDecl       → "fun" function;
-    function       → IDENTIFIER "(" parameters? ")" block;
-    parameters     → IDENTIFIER ( "," IDENTIFIER )*;
+   funcDecl       → "fun" function;
+   function       → IDENTIFIER "(" parameters? ")" block;
+   parameters     → IDENTIFIER ( "," IDENTIFIER )*;
 
    classDecl      → "class" IDENTIFIER ( "<" IDENTIFIER )? "{" function* "}" ;
 
-    varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
+   varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
 
-    statement      → exprStmt | ifStmt | whileStmt | forStmt | returnStmt |  printStmt | block;
-    ifStmt         → "if" "(" expression ")" statement
-                      ("else" statement)?;
+   statement      → exprStmt | ifStmt | whileStmt | forStmt | returnStmt |  printStmt | block;
+   ifStmt         → "if" "(" expression ")" statement
+                     ("else" statement)?;
 
-    returnStmt     → "return" expression? ";" ;
+   returnStmt     → "return" expression? ";" ;
 
-    whileStmt      → "while" "(" expression ")" statement;
-    forStmt        → "for" "(" varDecl | exprStmt | ";" expression? ";" expression? ")" statement;
+   whileStmt      → "while" "(" expression ")" statement;
+   forStmt        → "for" "(" varDecl | exprStmt | ";" expression? ";" expression? ")" statement;
 
-    block          → "{" declaration* "}";
-    exprStmt       → expression ";" ;
-    printStmt      → "print" expression ";" ;
+   block          → "{" declaration* "}";
+   exprStmt       → expression ";" ;
+   printStmt      → "print" expression ";" ;
 
-    expression     → assignment;
-    assignment     → (call ".")? IDENTIFIER "=" assignment | logicalOr;
-    logicalOr      → logicalAnd ( "or" logicalAnd)*;
-    logicalAnd     → equality ( "and" equality)*;
-    equality       → comparison ( ( "!=" | "==" ) comparison )* ;
-    comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
-    term           → factor ( ( "-" | "+" ) factor )* ;
-    factor         → unary ( ( "/" | "*" ) unary )* ;
-    unary          → ( "!" | "-" ) unary | call ;
-    call           → primary ( "(" arguments? ")" )* | getExpression;
+   expression     → assignment;
+   assignment     → (call ".")? IDENTIFIER "=" assignment | logicalOr;
+   logicalOr      → logicalAnd ( "or" logicalAnd)*;
+   logicalAnd     → equality ( "and" equality)*;
+   equality       → comparison ( ( "!=" | "==" ) comparison )* ;
+   comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
+   term           → factor ( ( "-" | "+" ) factor )* ;
+   factor         → unary ( ( "/" | "*" ) unary )* ;
+   unary          → ( "!" | "-" ) unary | call ;
+   call           → primary ( "(" arguments? ")" )* | getExpression;
    getExpression  → primary ( "." IDENTIFIER )*;
    arguments      → expression ( "," expression )*;
-    primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | "super" "." IDENTIFIER ;
+   primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | "super" "." IDENTIFIER ;
 */
 
 type Parser struct {
@@ -369,12 +369,21 @@ func (parser *Parser) unary() Node {
 func (parser *Parser) call() Node {
 	expr := parser.primary()
 
-	for parser.match(PARANLEFT) {
-		expr = parser.finishCall(expr)
-
+	for parser.match(PARANLEFT) || parser.match(DOT) {
+		if parser.peekPrevious().TokenType == PARANLEFT {
+			expr = parser.finishCall(expr)
+		} else {
+			expr = parser.getExpression(expr)
+		}
 	}
-
 	return expr
+}
+
+func (parser *Parser) getExpression(object Node) Node {
+	property := parser.peekParser()
+	parser.consume(IDENTIFIER, "Expected Property name")
+
+	return &GetExpr{Object: object, Property: property}
 }
 
 func (parser *Parser) finishCall(callee Node) Node {
@@ -415,6 +424,12 @@ func (parser *Parser) primary() Node {
 		return &Primary{ValType: "boolean", Value: true}
 	case NIL:
 		return &Primary{ValType: "nil", Value: nil}
+	case THIS:
+		return &This{Identifier: currToken}
+	case SUPER:
+		parser.consume(DOT, "Expected '.' after super")
+		parser.consume(IDENTIFIER, "Expected method name for super-class")
+		return &Super{Identifier: currToken, Property: parser.peekPrevious()}
 	case IDENTIFIER:
 		return &Variable{Identifier: currToken}
 	case PARANLEFT:

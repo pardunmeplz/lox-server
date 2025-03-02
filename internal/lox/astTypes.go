@@ -55,6 +55,7 @@ func (expr *This) accept(visitor Visitor) {
 
 type Super struct {
 	Identifier Token
+	Property   Token
 }
 
 func (expr *Super) accept(visitor Visitor) {
@@ -74,4 +75,12 @@ type Call struct {
 }
 
 func (expr *Call) accept(visitor Visitor) {
+}
+
+type GetExpr struct {
+	Object   Node
+	Property Token
+}
+
+func (expr *GetExpr) accept(visitor Visitor) {
 }
