@@ -71,12 +71,12 @@ func processRequest(request map[string]any) (map[string]any, error) {
 	case "initialized":
 		return nil, nil
 	case "textDocument/didOpen":
-		serverState.notificationChannel <- request
+		go sendNotification(request)
 		return nil, nil
 	case "textDocument/didClose":
 		return nil, nil
 	case "textDocument/didChange":
-		serverState.notificationChannel <- request
+		go sendNotification(request)
 		return nil, nil
 	}
 
