@@ -5,6 +5,25 @@ type Node interface {
 }
 
 type Visitor interface {
+	visitPrimary(*Primary)
+	visitBinary(*Binary)
+	visitUnary(*Unary)
+	visitGroup(*Group)
+	visitVariable(*Variable)
+	visitThis(*This)
+	visitSuper(*Super)
+	visitAssignment(*Assignment)
+	visitCall(*Call)
+	visitGetExpr(*GetExpr)
+	visitExprStmt(*ExpressionStmt)
+	visitPrint(*PrintStmt)
+	visitReturn(*ReturnStmt)
+	visitBlock(*BlockStmt)
+	visitIf(*IfStmt)
+	visitVarDecl(*VarDecl)
+	visitWhile(*WhileStmt)
+	visitFuncDecl(*FuncDecl)
+	visitClassDecl(*ClassDecl)
 }
 
 type Primary struct {
@@ -13,6 +32,7 @@ type Primary struct {
 }
 
 func (expr *Primary) accept(visitor Visitor) {
+	visitor.visitPrimary(expr)
 }
 
 type Binary struct {
@@ -22,6 +42,7 @@ type Binary struct {
 }
 
 func (expr *Binary) accept(visitor Visitor) {
+	visitor.visitBinary(expr)
 }
 
 type Unary struct {
@@ -30,6 +51,7 @@ type Unary struct {
 }
 
 func (expr *Unary) accept(visitor Visitor) {
+	visitor.visitUnary(expr)
 }
 
 type Group struct {
@@ -37,6 +59,7 @@ type Group struct {
 }
 
 func (expr *Group) accept(visitor Visitor) {
+	visitor.visitGroup(expr)
 }
 
 type Variable struct {
@@ -44,6 +67,7 @@ type Variable struct {
 }
 
 func (expr *Variable) accept(visitor Visitor) {
+	visitor.visitVariable(expr)
 }
 
 type This struct {
@@ -51,6 +75,7 @@ type This struct {
 }
 
 func (expr *This) accept(visitor Visitor) {
+	visitor.visitThis(expr)
 }
 
 type Super struct {
@@ -59,6 +84,7 @@ type Super struct {
 }
 
 func (expr *Super) accept(visitor Visitor) {
+	visitor.visitSuper(expr)
 }
 
 type Assignment struct {
@@ -67,6 +93,7 @@ type Assignment struct {
 }
 
 func (expr *Assignment) accept(visitor Visitor) {
+	visitor.visitAssignment(expr)
 }
 
 type Call struct {
@@ -75,6 +102,7 @@ type Call struct {
 }
 
 func (expr *Call) accept(visitor Visitor) {
+	visitor.visitCall(expr)
 }
 
 type GetExpr struct {
@@ -83,4 +111,5 @@ type GetExpr struct {
 }
 
 func (expr *GetExpr) accept(visitor Visitor) {
+	visitor.visitGetExpr(expr)
 }

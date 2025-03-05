@@ -5,6 +5,7 @@ type ExpressionStmt struct {
 }
 
 func (expr *ExpressionStmt) accept(visitor Visitor) {
+	visitor.visitExprStmt(expr)
 }
 
 type PrintStmt struct {
@@ -12,6 +13,7 @@ type PrintStmt struct {
 }
 
 func (expr *PrintStmt) accept(visitor Visitor) {
+	visitor.visitPrint(expr)
 }
 
 type ReturnStmt struct {
@@ -19,6 +21,7 @@ type ReturnStmt struct {
 }
 
 func (expr *ReturnStmt) accept(visitor Visitor) {
+	visitor.visitReturn(expr)
 }
 
 type BlockStmt struct {
@@ -26,6 +29,7 @@ type BlockStmt struct {
 }
 
 func (expr *BlockStmt) accept(visitor Visitor) {
+	visitor.visitBlock(expr)
 }
 
 type IfStmt struct {
@@ -35,6 +39,7 @@ type IfStmt struct {
 }
 
 func (expr *IfStmt) accept(visitor Visitor) {
+	visitor.visitIf(expr)
 }
 
 type VarDecl struct {
@@ -43,6 +48,7 @@ type VarDecl struct {
 }
 
 func (expr *VarDecl) accept(visitor Visitor) {
+	visitor.visitVarDecl(expr)
 }
 
 type WhileStmt struct {
@@ -51,6 +57,7 @@ type WhileStmt struct {
 }
 
 func (expr *WhileStmt) accept(visitor Visitor) {
+	visitor.visitWhile(expr)
 }
 
 type FuncDecl struct {
@@ -60,6 +67,7 @@ type FuncDecl struct {
 }
 
 func (expr *FuncDecl) accept(visitor Visitor) {
+	visitor.visitFuncDecl(expr)
 }
 
 type ClassDecl struct {
@@ -69,4 +77,5 @@ type ClassDecl struct {
 }
 
 func (expr *ClassDecl) accept(visitor Visitor) {
+	visitor.visitClassDecl(expr)
 }
