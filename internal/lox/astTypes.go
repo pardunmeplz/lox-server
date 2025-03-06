@@ -64,6 +64,7 @@ func (expr *Group) accept(visitor Visitor) {
 
 type Variable struct {
 	Identifier Token
+	Definition Token
 }
 
 func (expr *Variable) accept(visitor Visitor) {

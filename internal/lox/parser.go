@@ -45,16 +45,57 @@ import (
    primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | "super" "." IDENTIFIER ;
 */
 
+type SymbolMap struct {
+	currentTable map[string]Token
+	previous     *SymbolMap
+}
+
 type Parser struct {
 	tokenList    []Token
 	errorList    []CompileError
 	currentToken int
+	symbolMap    *SymbolMap
 }
 
 func (parser *Parser) initialize(input []Token) {
 	parser.tokenList = input
 	parser.currentToken = 0
 	parser.errorList = make([]CompileError, 0)
+	parser.symbolMap = &SymbolMap{
+		currentTable: make(map[string]Token),
+		previous:     nil,
+	}
+}
+
+func (parser *Parser) raiseScope() {
+	parser.symbolMap = &SymbolMap{
+		currentTable: make(map[string]Token),
+		previous:     parser.symbolMap,
+	}
+}
+
+func (parser *Parser) closeScope() {
+	if parser.symbolMap.previous != nil {
+		parser.symbolMap = parser.symbolMap.previous
+	}
+}
+
+func (parser *Parser) getDefinition(name string) (Token, bool) {
+	current := parser.symbolMap
+	for current != nil {
+		if token, isPresent := current.currentTable[name]; isPresent {
+			return token, true
+		}
+		current = current.previous
+	}
+	return Token{}, false
+}
+
+func (parser *Parser) addDefinition(token Token) {
+	key, ok := token.Value.(string)
+	if ok {
+		parser.symbolMap.currentTable[key] = token
+	}
 }
 
 func (parser *Parser) Parse(input []Token) ([]Node, []CompileError) {
@@ -191,11 +232,13 @@ func (parser *Parser) exprStmt() Node {
 }
 
 func (parser *Parser) block() Node {
+	parser.raiseScope()
 	body := make([]Node, 0)
 	for token := parser.peekParser(); token.TokenType != EOF && token.TokenType != BRACERIGHT; token = parser.peekParser() {
 		body = append(body, parser.declaration())
 	}
 	parser.consume(BRACERIGHT, "Expected '}' at end of block")
+	parser.closeScope()
 	return &BlockStmt{Body: body}
 }
 
