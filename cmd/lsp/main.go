@@ -6,8 +6,8 @@ import (
 )
 
 func main() {
-	startServer()
-	//testLanguage()
+	//startServer()
+	testLanguage()
 }
 
 func startServer() {
@@ -15,12 +15,5 @@ func startServer() {
 }
 
 func testLanguage() {
-	lox.ParseCode(`
-        class myclass {
-            testmethod(){
-            var x = 12;
-            return x.testvariable.anotherProp;
-            }
-        }
-        `)
+	lox.ParseCode("{\r\n    var quacker;\r\n    print quacker;\r\n}\r\n\r\nprint\r\n")
 }

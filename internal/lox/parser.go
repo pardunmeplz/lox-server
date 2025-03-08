@@ -492,26 +492,25 @@ func (parser *Parser) arguments() []Node {
 func (parser *Parser) primary() Node {
 
 	currToken := parser.peekParser()
-	parser.advanceParser()
 
-	switch currToken.TokenType {
-	case STRING:
+	switch {
+	case parser.match(STRING):
 		return &Primary{ValType: "string", Value: currToken.Value}
-	case NUMBER:
+	case parser.match(NUMBER):
 		return &Primary{ValType: "number", Value: currToken.Value}
-	case TRUE:
+	case parser.match(TRUE):
 		return &Primary{ValType: "boolean", Value: true}
-	case FALSE:
+	case parser.match(FALSE):
 		return &Primary{ValType: "boolean", Value: true}
-	case NIL:
+	case parser.match(NIL):
 		return &Primary{ValType: "nil", Value: nil}
-	case THIS:
+	case parser.match(THIS):
 		return &This{Identifier: currToken}
-	case SUPER:
+	case parser.match(SUPER):
 		parser.consume(DOT, "Expected '.' after super")
 		parser.consume(IDENTIFIER, "Expected method name for super-class")
 		return &Super{Identifier: currToken, Property: parser.peekPrevious()}
-	case IDENTIFIER:
+	case parser.match(IDENTIFIER):
 		name, ok := currToken.Value.(string)
 		var definition Token
 		if ok {
@@ -521,7 +520,7 @@ func (parser *Parser) primary() Node {
 			parser.addError(fmt.Sprintf("Variable %s is not defined in current scope", name))
 		}
 		return &Variable{Identifier: currToken, Definition: definition}
-	case PARANLEFT:
+	case parser.match(PARANLEFT):
 		expr := parser.expression()
 		parser.consume(PARANRIGHT, fmt.Sprintf("Expected ')' at line %d character %d", currToken.Line, currToken.Character))
 		return &Group{Expression: expr}
@@ -531,7 +530,6 @@ func (parser *Parser) primary() Node {
 
 func (parser *Parser) advanceParser() {
 	parser.currentToken++
-
 }
 
 func (parser *Parser) match(tokenType int) bool {
