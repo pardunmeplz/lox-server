@@ -5,39 +5,41 @@ import (
 	lsp "lox-server/internal/lsp/types"
 )
 
-func initializeCheck(request map[string]any) map[string]any {
+func initializeCheck(request map[string]any) *lsp.JsonRpcResponse {
 	if !serverState.initialized {
-		return map[string]any{
-			"jsonrpc": "2.0",
-			"id":      request["id"],
-			"error":   lsp.InvalidRequest,
+		response := lsp.JsonRpcResponse{
+			JsonRpc: "2.0",
+			Id:      request["id"],
+			Error:   lsp.InvalidRequest,
 		}
+		return &response
 	}
 	return nil
 }
 
-func shutdownCheck(request map[string]any) map[string]any {
+func shutdownCheck(request map[string]any) *lsp.JsonRpcResponse {
 	if !serverState.initialized {
-		return map[string]any{
-			"jsonrpc": "2.0",
-			"id":      request["id"],
-			"error":   lsp.InvalidRequest,
+		response := lsp.JsonRpcResponse{
+			JsonRpc: "2.0",
+			Id:      request["id"],
+			Error:   lsp.InvalidRequest,
 		}
+		return &response
 	}
 	return nil
 }
 
-func protocolInitialize(request map[string]any) (map[string]any, error) {
+func protocolInitialize(request map[string]any) (*lsp.JsonRpcResponse, error) {
 	shutCheck := shutdownCheck(request)
 	if shutCheck != nil {
 		serverState.initialized = false
 		return shutCheck, nil
 	}
 
-	responseObj := map[string]any{
-		"jsonrpc": "2.0",
-		"id":      request["id"],
-		"result": map[string]any{
+	responseObj := lsp.JsonRpcResponse{
+		JsonRpc: "2.0",
+		Id:      request["id"],
+		Result: map[string]any{
 			"capabilities": map[string]any{
 				"textDocumentSync": map[string]any{
 					"openClose": true,
@@ -49,21 +51,24 @@ func protocolInitialize(request map[string]any) (map[string]any, error) {
 				"version": "0.1.0",
 			}},
 	}
-	return responseObj, nil
+
+	return &responseObj, nil
 
 }
 
-func protocolShutdown(request map[string]any) map[string]any {
+func protocolShutdown(request map[string]any) *lsp.JsonRpcResponse {
+
 	initialCheck := initializeCheck(request)
 	if initialCheck != nil {
 		serverState.shutdown = false
 		return initialCheck
 	}
-	return map[string]any{
-		"jsonrpc": "2.0",
-		"id":      request["id"],
-		"result":  nil,
+	responseObj := lsp.JsonRpcResponse{
+		JsonRpc: "2.0",
+		Id:      request["id"],
+		Result:  nil,
 	}
+	return &responseObj
 }
 
 func diagnosticNotification(code string, uri string, version int) (lsp.JsonRpcNotification, error) {

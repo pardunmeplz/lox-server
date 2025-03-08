@@ -45,7 +45,7 @@ func handleRequest(msg string) ([]byte, error) {
 		return nil, nil
 	}
 
-	response, err := json.Marshal(responseObj)
+	response, err := json.Marshal(*responseObj)
 	if err != nil {
 		return nil, fmt.Errorf("invalid Response: %v", err)
 	}
@@ -53,7 +53,7 @@ func handleRequest(msg string) ([]byte, error) {
 	return response, nil
 }
 
-func processRequest(request map[string]any) (map[string]any, error) {
+func processRequest(request map[string]any) (*lsp.JsonRpcResponse, error) {
 
 	switch request["method"] {
 	case "initialize":

@@ -102,9 +102,16 @@ func (parser *Parser) getDefinitionInScope(name string) (Token, bool) {
 }
 
 func (parser *Parser) addDefinition(token Token) {
-	key, ok := token.Value.(string)
+
+	name, ok := token.Value.(string)
 	if ok {
-		parser.symbolMap.currentTable[key] = token
+		definition, isPresent := parser.getDefinitionInScope(name)
+		if isPresent && parser.isGlobal() {
+			parser.addWarning(fmt.Sprintf("%s is already declared in this scope at line %d", name, definition.Line+1))
+		} else if isPresent {
+			parser.addError(fmt.Sprintf("%s is already declared in this scope at line %d", name, definition.Line+1))
+		}
+		parser.symbolMap.currentTable[name] = token
 	}
 }
 
@@ -132,13 +139,6 @@ func (parser *Parser) declaration() Node {
 
 func (parser *Parser) classDeclaration() Node {
 	identifier := parser.peekParser()
-
-	definition, isPresent := parser.getDefinitionInScope(identifier.Value.(string))
-	if isPresent && parser.isGlobal() {
-		parser.addWarning(fmt.Sprintf("%s is already declared in this scope at line %d", identifier.Value.(string), definition.Line+1))
-	} else if isPresent {
-		parser.addError(fmt.Sprintf("%s is already declared in this scope at line %d", identifier.Value.(string), definition.Line+1))
-	}
 	parser.addDefinition(identifier)
 	parser.consume(IDENTIFIER, "Expected identifier for class name")
 
@@ -168,15 +168,8 @@ func (parser *Parser) classDeclaration() Node {
 
 func (parser *Parser) varDeclaration() Node {
 	identifier := parser.peekParser()
-	parser.consume(IDENTIFIER, "Expected identifier after var declaration")
-
-	definition, isPresent := parser.getDefinitionInScope(identifier.Value.(string))
-	if isPresent && parser.isGlobal() {
-		parser.addWarning(fmt.Sprintf("%s is already declared in this scope at line %d", identifier.Value.(string), definition.Line+1))
-	} else if isPresent {
-		parser.addError(fmt.Sprintf("%s is already declared in this scope at line %d", identifier.Value.(string), definition.Line+1))
-	}
 	parser.addDefinition(identifier)
+	parser.consume(IDENTIFIER, "Expected identifier after var declaration")
 
 	var value Node = &Primary{ValType: "nil", Value: nil}
 	if parser.match(EQUAL) {
@@ -190,15 +183,7 @@ func (parser *Parser) varDeclaration() Node {
 
 func (parser *Parser) funcDeclaration() Node {
 	identifier := parser.peekParser()
-
-	definition, isPresent := parser.getDefinitionInScope(identifier.Value.(string))
-	if isPresent && parser.isGlobal() {
-		parser.addWarning(fmt.Sprintf("%s is already declared in this scope at line %d", identifier.Value.(string), definition.Line+1))
-	} else if isPresent {
-		parser.addError(fmt.Sprintf("%s is already declared in this scope at line %d", identifier.Value.(string), definition.Line+1))
-	}
 	parser.addDefinition(identifier)
-
 	parser.consume(IDENTIFIER, "Expected identifier for function name")
 
 	parser.consume(PARANLEFT, "Expected ( after function name")
@@ -517,7 +502,7 @@ func (parser *Parser) primary() Node {
 			definition, ok = parser.getDefinition(name)
 		}
 		if !ok {
-			parser.addError(fmt.Sprintf("Variable %s is not defined in current scope", name))
+			parser.addError(fmt.Sprintf("%s is not defined in current scope", name))
 		}
 		return &Variable{Identifier: currToken, Definition: definition}
 	case parser.match(PARANLEFT):
