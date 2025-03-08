@@ -6,7 +6,8 @@ type Literal struct {
 }
 
 type CompileError struct {
-	Message string
-	Line    int
-	Char    int
+	Message  string
+	Line     int
+	Char     int
+	Severity int
 }

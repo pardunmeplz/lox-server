@@ -48,6 +48,7 @@ import (
 type SymbolMap struct {
 	currentTable map[string]Token
 	previous     *SymbolMap
+	currScope    int
 }
 
 type Parser struct {
@@ -64,18 +65,22 @@ func (parser *Parser) initialize(input []Token) {
 	parser.symbolMap = &SymbolMap{
 		currentTable: make(map[string]Token),
 		previous:     nil,
+		currScope:    0,
 	}
 }
+
+func (parser *Parser) isGlobal() bool { return parser.symbolMap.currScope == 0 }
 
 func (parser *Parser) raiseScope() {
 	parser.symbolMap = &SymbolMap{
 		currentTable: make(map[string]Token),
 		previous:     parser.symbolMap,
+		currScope:    parser.symbolMap.currScope + 1,
 	}
 }
 
 func (parser *Parser) closeScope() {
-	if parser.symbolMap.previous != nil {
+	if parser.symbolMap != nil && parser.symbolMap.previous != nil {
 		parser.symbolMap = parser.symbolMap.previous
 	}
 }
@@ -89,6 +94,11 @@ func (parser *Parser) getDefinition(name string) (Token, bool) {
 		current = current.previous
 	}
 	return Token{}, false
+}
+
+func (parser *Parser) getDefinitionInScope(name string) (Token, bool) {
+	token, isPresent := parser.symbolMap.currentTable[name]
+	return token, isPresent
 }
 
 func (parser *Parser) addDefinition(token Token) {
@@ -122,6 +132,14 @@ func (parser *Parser) declaration() Node {
 
 func (parser *Parser) classDeclaration() Node {
 	identifier := parser.peekParser()
+
+	definition, isPresent := parser.getDefinitionInScope(identifier.Value.(string))
+	if isPresent && parser.isGlobal() {
+		parser.addWarning(fmt.Sprintf("%s is already declared in this scope at line %d", identifier.Value.(string), definition.Line+1))
+	} else if isPresent {
+		parser.addError(fmt.Sprintf("%s is already declared in this scope at line %d", identifier.Value.(string), definition.Line+1))
+	}
+	parser.addDefinition(identifier)
 	parser.consume(IDENTIFIER, "Expected identifier for class name")
 
 	var parent *Token
@@ -132,6 +150,7 @@ func (parser *Parser) classDeclaration() Node {
 	}
 
 	parser.consume(BRACELEFT, "Expected '{' before class body")
+	parser.raiseScope()
 	methods := make([]Node, 0)
 	for token := parser.peekParser().TokenType; token != BRACERIGHT && token != EOF; token = parser.peekParser().TokenType {
 		method := parser.funcDeclaration()
@@ -142,6 +161,7 @@ func (parser *Parser) classDeclaration() Node {
 	}
 
 	parser.consume(BRACERIGHT, "Expect '}' at end of class declaration")
+	parser.closeScope()
 
 	return &ClassDecl{Body: methods, Name: identifier, Parent: parent}
 }
@@ -149,6 +169,15 @@ func (parser *Parser) classDeclaration() Node {
 func (parser *Parser) varDeclaration() Node {
 	identifier := parser.peekParser()
 	parser.consume(IDENTIFIER, "Expected identifier after var declaration")
+
+	definition, isPresent := parser.getDefinitionInScope(identifier.Value.(string))
+	if isPresent && parser.isGlobal() {
+		parser.addWarning(fmt.Sprintf("%s is already declared in this scope at line %d", identifier.Value.(string), definition.Line+1))
+	} else if isPresent {
+		parser.addError(fmt.Sprintf("%s is already declared in this scope at line %d", identifier.Value.(string), definition.Line+1))
+	}
+	parser.addDefinition(identifier)
+
 	var value Node = &Primary{ValType: "nil", Value: nil}
 	if parser.match(EQUAL) {
 		value = parser.expression()
@@ -161,6 +190,15 @@ func (parser *Parser) varDeclaration() Node {
 
 func (parser *Parser) funcDeclaration() Node {
 	identifier := parser.peekParser()
+
+	definition, isPresent := parser.getDefinitionInScope(identifier.Value.(string))
+	if isPresent && parser.isGlobal() {
+		parser.addWarning(fmt.Sprintf("%s is already declared in this scope at line %d", identifier.Value.(string), definition.Line+1))
+	} else if isPresent {
+		parser.addError(fmt.Sprintf("%s is already declared in this scope at line %d", identifier.Value.(string), definition.Line+1))
+	}
+	parser.addDefinition(identifier)
+
 	parser.consume(IDENTIFIER, "Expected identifier for function name")
 
 	parser.consume(PARANLEFT, "Expected ( after function name")
@@ -474,7 +512,15 @@ func (parser *Parser) primary() Node {
 		parser.consume(IDENTIFIER, "Expected method name for super-class")
 		return &Super{Identifier: currToken, Property: parser.peekPrevious()}
 	case IDENTIFIER:
-		return &Variable{Identifier: currToken}
+		name, ok := currToken.Value.(string)
+		var definition Token
+		if ok {
+			definition, ok = parser.getDefinition(name)
+		}
+		if !ok {
+			parser.addError(fmt.Sprintf("Variable %s is not defined in current scope", name))
+		}
+		return &Variable{Identifier: currToken, Definition: definition}
 	case PARANLEFT:
 		expr := parser.expression()
 		parser.consume(PARANRIGHT, fmt.Sprintf("Expected ')' at line %d character %d", currToken.Line, currToken.Character))
@@ -504,11 +550,15 @@ func (parser *Parser) consume(tokenType int, message string) {
 }
 
 func (parser *Parser) addError(message string) {
-	parser.errorList = append(parser.errorList, CompileError{Message: message, Line: parser.peekParser().Line, Char: parser.peekParser().Character})
+	parser.errorList = append(parser.errorList, CompileError{Message: message, Line: parser.peekParser().Line, Char: parser.peekParser().Character, Severity: 1})
+}
+
+func (parser *Parser) addWarning(message string) {
+	parser.errorList = append(parser.errorList, CompileError{Message: message, Line: parser.peekParser().Line, Char: parser.peekParser().Character, Severity: 2})
 }
 
 func (parser *Parser) addErrorAt(message string, line int, char int) {
-	parser.errorList = append(parser.errorList, CompileError{Message: message, Line: line, Char: char})
+	parser.errorList = append(parser.errorList, CompileError{Message: message, Line: line, Char: char, Severity: 1})
 }
 
 func (parser *Parser) peekPrevious() Token {

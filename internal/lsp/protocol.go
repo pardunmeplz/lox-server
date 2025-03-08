@@ -76,7 +76,7 @@ func diagnosticNotification(code string, uri string, version int) (lsp.JsonRpcNo
 	diagnostic := []lsp.Diagnostic{}
 	for _, e := range parseErrors {
 		diagnostic = append(diagnostic, lsp.Diagnostic{
-			Severity: 1,
+			Severity: e.Severity,
 			Message:  e.Message,
 			ErrRange: lsp.Range{
 				Start: lsp.Position{

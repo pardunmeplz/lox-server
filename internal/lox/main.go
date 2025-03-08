@@ -34,6 +34,6 @@ func FindErrors(code string) ([]CompileError, error) {
 
 	_, parseErrors := parser.Parse(tokens)
 
-	return append(codeErrors, parseErrors...), nil
+	return append(parseErrors, codeErrors...), nil
 
 }
