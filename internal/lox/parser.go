@@ -52,10 +52,11 @@ type SymbolMap struct {
 }
 
 type Parser struct {
-	tokenList    []Token
-	errorList    []CompileError
-	currentToken int
-	symbolMap    *SymbolMap
+	tokenList       []Token
+	errorList       []CompileError
+	currentToken    int
+	symbolMap       *SymbolMap
+	identifierNodes []Node
 }
 
 func (parser *Parser) initialize(input []Token) {
@@ -101,6 +102,11 @@ func (parser *Parser) getDefinitionInScope(name string) (Token, bool) {
 	return token, isPresent
 }
 
+func (parser *Parser) addIdentifier(node Node) {
+	parser.identifierNodes = append(parser.identifierNodes, node)
+
+}
+
 func (parser *Parser) addDefinition(token Token) {
 
 	name, ok := token.Value.(string)
@@ -115,13 +121,13 @@ func (parser *Parser) addDefinition(token Token) {
 	}
 }
 
-func (parser *Parser) Parse(input []Token) ([]Node, []CompileError) {
+func (parser *Parser) Parse(input []Token) ([]Node, []Node, []CompileError) {
 	parser.initialize(input)
 	program := make([]Node, 0)
 	for token := parser.peekParser(); token.TokenType != EOF; token = parser.peekParser() {
 		program = append(program, parser.declaration())
 	}
-	return program, parser.errorList
+	return program, parser.identifierNodes, parser.errorList
 }
 
 func (parser *Parser) declaration() Node {
@@ -504,7 +510,10 @@ func (parser *Parser) primary() Node {
 		if !ok {
 			parser.addError(fmt.Sprintf("%s is not defined in current scope", name))
 		}
-		return &Variable{Identifier: currToken, Definition: definition}
+		result := Variable{Identifier: currToken, Definition: definition}
+		parser.addIdentifier(&result)
+
+		return &result
 	case parser.match(PARANLEFT):
 		expr := parser.expression()
 		parser.consume(PARANRIGHT, fmt.Sprintf("Expected ')' at line %d character %d", currToken.Line, currToken.Character))

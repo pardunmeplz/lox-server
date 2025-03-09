@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func ParseCode(code string) error {
+func PrintParse(code string) error {
 	var scanner Scanner
 	var parser Parser
 	tokens, _, err := scanner.Scan(code)
@@ -14,7 +14,7 @@ func ParseCode(code string) error {
 	}
 	fmt.Println(tokens)
 
-	ast, errorList := parser.Parse(tokens)
+	ast, _, errorList := parser.Parse(tokens)
 	printable, err := (json.Marshal(ast))
 	if err != nil {
 		return err
@@ -22,6 +22,18 @@ func ParseCode(code string) error {
 	fmt.Println(errorList)
 	fmt.Println(string(printable))
 	return nil
+}
+
+func ParseCode(code string) ([]CompileError, []Node, error) {
+	var scanner Scanner
+	var parser Parser
+	tokens, scanErrors, err := scanner.Scan(code)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	_, identifiers, parseErrors := parser.Parse(tokens)
+	return append(parseErrors, scanErrors...), identifiers, nil
 }
 
 func FindErrors(code string) ([]CompileError, error) {
@@ -32,7 +44,7 @@ func FindErrors(code string) ([]CompileError, error) {
 		return nil, err
 	}
 
-	_, parseErrors := parser.Parse(tokens)
+	_, _, parseErrors := parser.Parse(tokens)
 
 	return append(parseErrors, codeErrors...), nil
 
