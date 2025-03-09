@@ -1,15 +1,16 @@
 package lsp
 
 import (
+	"encoding/json"
 	"lox-server/internal/lox"
 	lsp "lox-server/internal/lsp/types"
 )
 
-func initializeCheck(request map[string]any) *lsp.JsonRpcResponse {
+func initializeCheck(request lsp.JsonRpcRequest) *lsp.JsonRpcResponse {
 	if !serverState.initialized {
 		response := lsp.JsonRpcResponse{
 			JsonRpc: "2.0",
-			Id:      request["id"],
+			Id:      request.Id,
 			Error:   lsp.InvalidRequest,
 		}
 		return &response
@@ -17,11 +18,11 @@ func initializeCheck(request map[string]any) *lsp.JsonRpcResponse {
 	return nil
 }
 
-func shutdownCheck(request map[string]any) *lsp.JsonRpcResponse {
+func shutdownCheck(request lsp.JsonRpcRequest) *lsp.JsonRpcResponse {
 	if !serverState.initialized {
 		response := lsp.JsonRpcResponse{
 			JsonRpc: "2.0",
-			Id:      request["id"],
+			Id:      request.Id,
 			Error:   lsp.InvalidRequest,
 		}
 		return &response
@@ -29,7 +30,7 @@ func shutdownCheck(request map[string]any) *lsp.JsonRpcResponse {
 	return nil
 }
 
-func protocolInitialize(request map[string]any) (*lsp.JsonRpcResponse, error) {
+func protocolInitialize(request lsp.JsonRpcRequest) (*lsp.JsonRpcResponse, error) {
 	shutCheck := shutdownCheck(request)
 	if shutCheck != nil {
 		serverState.initialized = false
@@ -38,25 +39,27 @@ func protocolInitialize(request map[string]any) (*lsp.JsonRpcResponse, error) {
 
 	responseObj := lsp.JsonRpcResponse{
 		JsonRpc: "2.0",
-		Id:      request["id"],
+		Id:      request.Id,
 		Result: map[string]any{
 			"capabilities": map[string]any{
 				"textDocumentSync": map[string]any{
 					"openClose": true,
 					"change":    1,
 				},
+				"definitionProvider": true,
 			},
 			"serverInfo": map[string]any{
 				"name":    "LoxServer",
 				"version": "0.1.0",
-			}},
+			},
+		},
 	}
 
 	return &responseObj, nil
 
 }
 
-func protocolShutdown(request map[string]any) *lsp.JsonRpcResponse {
+func protocolShutdown(request lsp.JsonRpcRequest) *lsp.JsonRpcResponse {
 
 	initialCheck := initializeCheck(request)
 	if initialCheck != nil {
@@ -65,9 +68,41 @@ func protocolShutdown(request map[string]any) *lsp.JsonRpcResponse {
 	}
 	responseObj := lsp.JsonRpcResponse{
 		JsonRpc: "2.0",
-		Id:      request["id"],
+		Id:      request.Id,
 		Result:  nil,
 	}
+	return &responseObj
+}
+
+func protocolDefinition(request lsp.JsonRpcRequest) *lsp.JsonRpcResponse {
+
+	responseObj := lsp.JsonRpcResponse{
+		JsonRpc: "2.0",
+		Id:      request.Id,
+		Result:  nil,
+	}
+
+	requestjson, err := json.Marshal(request.Params)
+	var requestObj lsp.DefinitionParams
+
+	if err != nil {
+		return &responseObj
+	}
+
+	err = json.Unmarshal(requestjson, &requestObj)
+
+	if err != nil {
+		return &responseObj
+	}
+
+	responseObj.Result = lsp.Location{
+		Uri: requestObj.TextDocument.Uri,
+		LocRange: lsp.Range{
+			Start: lsp.Position{Line: requestObj.Position.Line - 1, Character: 0},
+			End:   lsp.Position{Line: requestObj.Position.Line - 1, Character: 0},
+		},
+	}
+
 	return &responseObj
 }
 
@@ -105,4 +140,30 @@ func diagnosticNotification(code string, uri string, version int) (lsp.JsonRpcNo
 	}
 
 	return responseObj, err
+}
+
+func register(id int) lsp.JsonRpcRequest {
+	requestObj := lsp.JsonRpcRequest{
+		JsonRpc: "2.0",
+		Id:      id,
+		Method:  "client/registerCapability",
+		Params: lsp.RegistrationParams{
+			Registrations: []lsp.Registration{{
+				Id:     "definition",
+				Method: "textDocument/definition",
+				RegisterOptions: lsp.DefinitionRegistrationOptions{
+					TextDocumentRegistrationOptions: lsp.TextDocumentRegistrationOptions{
+						DocumentSelector: []lsp.DocumentFilter{
+							{
+								Pattern: "**/*.lox",
+							},
+						},
+					},
+				},
+			}},
+		},
+	}
+
+	return requestObj
+
 }

@@ -31,10 +31,14 @@ func split(data []byte, _ bool) (advance int, token []byte, err error) {
 }
 
 func handleRequest(msg string) ([]byte, error) {
-	var requestObj map[string]any
+	var requestObj lsp.JsonRpcRequest
 
 	if err := json.Unmarshal([]byte(msg), &requestObj); err != nil {
 		return nil, fmt.Errorf("invalid JSON: %v", err)
+	}
+
+	if requestObj.Method == "" {
+		return nil, nil
 	}
 
 	responseObj, err := processRequest(requestObj)
@@ -53,9 +57,18 @@ func handleRequest(msg string) ([]byte, error) {
 	return response, nil
 }
 
-func processRequest(request map[string]any) (*lsp.JsonRpcResponse, error) {
+func processRequest(request lsp.JsonRpcRequest) (*lsp.JsonRpcResponse, error) {
+	switch request.Id.(type) {
+	case string:
+		id, err := strconv.Atoi(request.Id.(string))
+		if err == nil {
+			serverState.idCount = id
+		}
+	case int:
+		serverState.idCount = request.Id.(int)
+	}
 
-	switch request["method"] {
+	switch request.Method {
 	case "initialize":
 		serverState.initialized = true
 		return protocolInitialize(request)
@@ -72,19 +85,22 @@ func processRequest(request map[string]any) (*lsp.JsonRpcResponse, error) {
 		return nil, nil
 	case "textDocument/didOpen":
 		go sendNotification(request)
+		//go sendRequest("client/registerCapability")
 		return nil, nil
 	case "textDocument/didClose":
 		return nil, nil
 	case "textDocument/didChange":
 		go sendNotification(request)
 		return nil, nil
+	case "textDocument/definition":
+		return protocolDefinition(request), nil
 	}
 
-	return nil, fmt.Errorf("Invalid Method: %v", request["method"])
+	return nil, fmt.Errorf("Invalid Method: %v", request.Method)
 }
 
-func processNotification(request map[string]any) []byte {
-	switch request["method"] {
+func processNotification(request lsp.JsonRpcRequest) []byte {
+	switch request.Method {
 	case "textDocument/didOpen":
 		var document lsp.DidOpenTextDocumentParams
 		err := getRequestValues(&document, request)
@@ -126,8 +142,8 @@ func processNotification(request map[string]any) []byte {
 
 }
 
-func getRequestValues[T any](document *T, request map[string]any) error {
-	params, err := json.Marshal(request["params"])
+func getRequestValues[T any](document *T, request lsp.JsonRpcRequest) error {
+	params, err := json.Marshal(request.Params)
 	if err != nil {
 		serverState.logger.Print(fmt.Sprintf("Marshal failed : %v", err))
 		return err

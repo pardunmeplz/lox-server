@@ -2,19 +2,23 @@ package lsp
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"log"
+	lsp "lox-server/internal/lsp/types"
 	"os"
 	"sync"
 	"time"
 )
 
 var serverState struct {
-	shutdown    bool
-	initialized bool
-	writer      *os.File
-	logger      *log.Logger
-	loggerMu    sync.Mutex
+	shutdown         bool
+	initialized      bool
+	writer           *os.File
+	logger           *log.Logger
+	loggerMu         sync.Mutex
+	idCount          int
+	serverRequestIds map[int]bool
 }
 
 func initializeServerState() {
@@ -22,6 +26,8 @@ func initializeServerState() {
 	serverState.shutdown = false
 	serverState.writer = os.Stdout
 	serverState.logger = getLogger("log.txt")
+	serverState.idCount = 1
+	serverState.serverRequestIds = make(map[int]bool)
 }
 
 func StartServer() {
@@ -51,7 +57,7 @@ func StartServer() {
 	}
 }
 
-func sendNotification(request map[string]any) {
+func sendNotification(request lsp.JsonRpcRequest) {
 
 	response := processNotification(request)
 	if response == nil {
@@ -65,6 +71,26 @@ func sendNotification(request map[string]any) {
 
 }
 
+func sendRequest(method string) {
+	id := serverState.idCount
+	serverState.idCount++
+	serverState.serverRequestIds[id] = true
+	switch method {
+	case "client/registerCapability":
+		requestObj := register(id)
+
+		request, err := json.Marshal(requestObj)
+		if err != nil {
+			serverState.logger.Print(fmt.Sprintf("invalid Request: %v\n", err))
+			return
+		}
+		if err := writeMessage(request); err != nil {
+			serverState.logger.Print(fmt.Sprintf("Error writing request: %v\n", err))
+		}
+		serverState.logger.Print(string(request))
+	}
+
+}
 func getLogger(fileName string) *log.Logger {
 	logfile, err := os.OpenFile(fileName, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
 	if err != nil {

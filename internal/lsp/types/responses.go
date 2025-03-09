@@ -19,8 +19,13 @@ type PublishDiagnosticParams struct {
 }
 
 type JsonRpcResponse struct {
-	JsonRpc string `json:"jsonRpc"`
+	JsonRpc string `json:"jsonrpc"`
 	Id      any    `json:"id"`
 	Result  any    `json:"result"`
 	Error   any    `json:"error"`
+}
+
+type Location struct {
+	Uri      string `json:"uri"`
+	LocRange Range  `json:"range"`
 }
