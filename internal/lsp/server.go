@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	lsp "lox-server/internal/lsp/types"
 	"os"
 	"sync"
 	"time"
@@ -19,6 +18,7 @@ var serverState struct {
 	loggerMu         sync.Mutex
 	idCount          int
 	serverRequestIds map[int]bool
+	documents        map[string]*DocumentService
 }
 
 func initializeServerState() {
@@ -28,6 +28,7 @@ func initializeServerState() {
 	serverState.logger = getLogger("log.txt")
 	serverState.idCount = 1
 	serverState.serverRequestIds = make(map[int]bool)
+	serverState.documents = make(map[string]*DocumentService)
 }
 
 func StartServer() {
@@ -57,9 +58,8 @@ func StartServer() {
 	}
 }
 
-func sendNotification(request lsp.JsonRpcRequest) {
+func sendNotification(response []byte) {
 
-	response := processNotification(request)
 	if response == nil {
 		return
 	}

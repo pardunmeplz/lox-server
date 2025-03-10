@@ -106,12 +106,7 @@ func protocolDefinition(request lsp.JsonRpcRequest) *lsp.JsonRpcResponse {
 	return &responseObj
 }
 
-func diagnosticNotification(code string, uri string, version int) (lsp.JsonRpcNotification, error) {
-
-	parseErrors, err := lox.FindErrors(code)
-	if err != nil || parseErrors == nil {
-		parseErrors = make([]lox.CompileError, 0)
-	}
+func diagnosticNotification(parseErrors []lox.CompileError, uri string, version int) lsp.JsonRpcNotification {
 
 	diagnostic := []lsp.Diagnostic{}
 	for _, e := range parseErrors {
@@ -139,7 +134,7 @@ func diagnosticNotification(code string, uri string, version int) (lsp.JsonRpcNo
 		Method:  "textDocument/publishDiagnostics",
 	}
 
-	return responseObj, err
+	return responseObj
 }
 
 func register(id int) lsp.JsonRpcRequest {

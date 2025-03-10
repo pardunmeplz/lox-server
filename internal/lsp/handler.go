@@ -84,62 +84,42 @@ func processRequest(request lsp.JsonRpcRequest) (*lsp.JsonRpcResponse, error) {
 	case "initialized":
 		return nil, nil
 	case "textDocument/didOpen":
-		go sendNotification(request)
-		//go sendRequest("client/registerCapability")
+		var params lsp.DidOpenTextDocumentParams
+		err := getRequestValues(&params, request)
+		if err != nil {
+			return nil, nil
+		}
+
+		serverState.documents[params.TextDocument.Uri] = &DocumentService{Uri: params.TextDocument.Uri}
+		go (func() {
+			serverState.documents[params.TextDocument.Uri].ParseCode(params.TextDocument.Text, params.TextDocument.Version)
+		})()
 		return nil, nil
 	case "textDocument/didClose":
+		var params lsp.DidCloseTextDocumentParams
+		err := getRequestValues(&params, request)
+		if err != nil {
+			return nil, nil
+		}
+
+		delete(serverState.documents, params.TextDocument.Uri)
 		return nil, nil
 	case "textDocument/didChange":
-		go sendNotification(request)
+		var params lsp.DidChangeTextDocumentParams
+		err := getRequestValues(&params, request)
+		if err != nil {
+			return nil, nil
+		}
+
+		go (func() {
+			serverState.documents[params.TextDocument.Uri].ParseCode(params.ContentChanges[0].Text, params.TextDocument.Version)
+		})()
 		return nil, nil
 	case "textDocument/definition":
 		return protocolDefinition(request), nil
 	}
 
 	return nil, fmt.Errorf("Invalid Method: %v", request.Method)
-}
-
-func processNotification(request lsp.JsonRpcRequest) []byte {
-	switch request.Method {
-	case "textDocument/didOpen":
-		var document lsp.DidOpenTextDocumentParams
-		err := getRequestValues(&document, request)
-		if err != nil {
-			return nil
-		}
-		responseObj, err := diagnosticNotification(document.TextDocument.Text, document.TextDocument.Uri, document.TextDocument.Version)
-		if err != nil {
-			serverState.logger.Print(fmt.Sprintf("Parse Error: %v\n", err))
-			return nil
-		}
-		response, err := json.Marshal(responseObj)
-		if err != nil {
-			serverState.logger.Print(fmt.Sprintf("invalid Response: %v\n", err))
-			return nil
-		}
-		return response
-
-	case "textDocument/didChange":
-		var document lsp.DidChangeTextDocumentParams
-		err := getRequestValues(&document, request)
-		if err != nil {
-			return nil
-		}
-		responseObj, err := diagnosticNotification(document.ContentChanges[0].Text, document.TextDocument.Uri, document.TextDocument.Version)
-		if err != nil {
-			serverState.logger.Print(fmt.Sprintf("Parse Error: %v\n", err))
-			return nil
-		}
-		response, err := json.Marshal(responseObj)
-		if err != nil {
-			serverState.logger.Print(fmt.Sprintf("invalid Response: %v\n", err))
-			return nil
-		}
-		return response
-
-	}
-	return nil
-
 }
 
 func getRequestValues[T any](document *T, request lsp.JsonRpcRequest) error {
