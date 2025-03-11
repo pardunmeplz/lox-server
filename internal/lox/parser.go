@@ -507,11 +507,13 @@ func (parser *Parser) primary() Node {
 		if ok {
 			definition, ok = parser.getDefinition(name)
 		}
+		result := Variable{Identifier: currToken, Definition: definition}
+
 		if !ok {
 			parser.addError(fmt.Sprintf("%s is not defined in current scope", name))
+		} else {
+			parser.addIdentifier(&result)
 		}
-		result := Variable{Identifier: currToken, Definition: definition}
-		parser.addIdentifier(&result)
 
 		return &result
 	case parser.match(PARANLEFT):

@@ -101,6 +101,7 @@ func (scannerState *Scanner) scanKeywords(char rune) (bool, error) {
 	}
 
 	start := scannerState.current
+	startChar := scannerState.currChar - 1
 	for len(*scannerState.source) > scannerState.current && (unicode.IsDigit(scannerState.peekScanner()) || unicode.IsLetter(scannerState.peekScanner()) || scannerState.peekScanner() == '_') {
 		scannerState.advanceScanner()
 	}
@@ -108,11 +109,11 @@ func (scannerState *Scanner) scanKeywords(char rune) (bool, error) {
 
 	tokenType, isKeyword := keywords[value]
 	if isKeyword {
-		scannerState.tokens = append(scannerState.tokens, Token{TokenType: tokenType, Line: scannerState.line, Character: scannerState.currChar})
+		scannerState.tokens = append(scannerState.tokens, Token{TokenType: tokenType, Line: scannerState.line, Character: startChar})
 		return true, nil
 	}
 
-	scannerState.tokens = append(scannerState.tokens, Token{TokenType: IDENTIFIER, Line: scannerState.line, Character: scannerState.currChar, Value: value})
+	scannerState.tokens = append(scannerState.tokens, Token{TokenType: IDENTIFIER, Line: scannerState.line, Character: startChar, Value: value})
 
 	return true, nil
 }

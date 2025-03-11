@@ -2,7 +2,9 @@ package lsp
 
 import (
 	"encoding/json"
+	"fmt"
 	"lox-server/internal/lox"
+	lsp "lox-server/internal/lsp/types"
 	"sync"
 )
 
@@ -23,9 +25,40 @@ func (loxService *DocumentService) ParseCode(code string, version int) {
 	loxService.Definables = definables
 	loxService.Errors = compileErrors
 
+	for _, definable := range definables {
+		check, _ := json.Marshal(definable)
+		serverState.logger.Print(fmt.Sprintf("LOGGER : %s", check))
+	}
 	responseObj := diagnosticNotification(compileErrors, loxService.Uri, version)
 	response, err := json.Marshal(responseObj)
 	sendNotification(response)
+}
+
+func (loxService *DocumentService) GetDefinition(position lsp.Position) lsp.Position {
+	for _, definable := range loxService.Definables {
+		switch definable.(type) {
+		case *lox.Variable:
+			variable := definable.(*lox.Variable)
+			name, ok := variable.Identifier.Value.(string)
+			if !ok {
+				continue
+			}
+			atCursor := variable.Identifier.Line == int(position.Line) &&
+				variable.Identifier.Character <= int(position.Character) &&
+				variable.Identifier.Character+len(name) >= int(position.Character)
+
+			if atCursor {
+				return lsp.Position{
+					Line:      uint(variable.Definition.Line),
+					Character: uint(variable.Definition.Character),
+				}
+			}
+		default:
+			continue
+		}
+	}
+	return position
+
 }
 
 // func processNotification(request) []byte {
