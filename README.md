@@ -28,7 +28,7 @@ go run cmd/lsp/main.go
     - [ ] **Panic - Recover** - Ignore errors caused by a preceding error to avoid unnecessary error reporting 
 - [x] **Diagnostics (`textDocument/publishDiagnostics`)** – Show syntax errors in real-time.  
 - [ ] **Hover (`textDocument/hover`)** – Provide information on symbols.  
-- [ ] **Go-to Definition (`textDocument/definition`)** – Jump to symbol definitions.  
+- [x] **Go-to Definition (`textDocument/definition`)** – Jump to symbol definitions.  
 - [ ] **Auto-Completion (`textDocument/completion`)** – Suggest keywords and variables.  
 
 ## **📖 Resources & References**  
