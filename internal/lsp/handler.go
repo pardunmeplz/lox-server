@@ -120,6 +120,8 @@ func processRequest(request lsp.JsonRpcRequest) (*lsp.JsonRpcResponse, error) {
 		return protocolDefinition(request), nil
 	case "textDocument/references":
 		return protocolReferences(request), nil
+	case "textDocument/formatting":
+		return protocolFormatting(request), nil
 	}
 
 	return nil, fmt.Errorf("Invalid Method: %v", request.Method)

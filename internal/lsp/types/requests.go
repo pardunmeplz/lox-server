@@ -57,6 +57,19 @@ type ReferenceParams struct {
 	Context                    ReferenceContext `json:"context"`
 }
 
+type DocumentFormattingParams struct {
+	TextDocument TextDocumentIdentifier `json:"textDocument"`
+	Options      FormattingOptions      `json:"options"`
+}
+
+type FormattingOptions struct {
+	TabSize                int  `json:"tabSize"`
+	InsertSpaces           bool `json:"insertSpaces"`
+	TrimTrailingWhiteSpace bool `json:"trimTrailingWhiteSpace"`
+	InsertFinalNewLine     bool `json:"insertFinalNewLine"`
+	TrimFinalNewLines      bool `json:"trimFinalNewLines"`
+}
+
 type Registration struct {
 	Id              string `json:"id"`
 	Method          string `json:"method"`

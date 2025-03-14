@@ -27,16 +27,16 @@ func PrintParse(code string) error {
 	return nil
 }
 
-func ParseCode(code string) ([]CompileError, []Node, map[Token][]Token, error) {
+func ParseCode(code string) ([]Token, []Node, []CompileError, []Node, map[Token][]Token, error) {
 	var scanner Scanner
 	var parser Parser
 	tokens, scanErrors, err := scanner.Scan(code)
 	if err != nil {
-		return nil, nil, nil, err
+		return tokens, nil, nil, nil, nil, err
 	}
 
-	_, identifiers, references, parseErrors := parser.Parse(tokens)
-	return append(parseErrors, scanErrors...), identifiers, references, nil
+	ast, identifiers, references, parseErrors := parser.Parse(tokens)
+	return tokens, ast, append(parseErrors, scanErrors...), identifiers, references, nil
 }
 
 func FindErrors(code string) ([]CompileError, error) {

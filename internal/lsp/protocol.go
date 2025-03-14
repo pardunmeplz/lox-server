@@ -47,8 +47,9 @@ func protocolInitialize(request lsp.JsonRpcRequest) (*lsp.JsonRpcResponse, error
 					"openClose": true,
 					"change":    1,
 				},
-				"definitionProvider": true,
-				"referencesProvider": true,
+				"definitionProvider":         true,
+				"referencesProvider":         true,
+				"documentFormattingProvider": true,
 			},
 			"serverInfo": map[string]any{
 				"name":    "LoxServer",
@@ -123,6 +124,50 @@ func protocolReferences(request lsp.JsonRpcRequest) *lsp.JsonRpcResponse {
 			},
 		})
 	}
+
+	responseObj.Result = responseParams
+	return &responseObj
+}
+
+func protocolFormatting(request lsp.JsonRpcRequest) *lsp.JsonRpcResponse {
+	responseObj := lsp.JsonRpcResponse{
+		JsonRpc: "2.0",
+		Id:      request.Id,
+		Result:  nil,
+	}
+
+	requestjson, err := json.Marshal(request.Params)
+	var requestObj lsp.DocumentFormattingParams
+
+	if err != nil {
+		return &responseObj
+	}
+
+	err = json.Unmarshal(requestjson, &requestObj)
+
+	if err != nil {
+		return &responseObj
+	}
+
+	document, ok := serverState.documents[requestObj.TextDocument.Uri]
+	if !ok {
+		serverState.logger.Print(fmt.Sprintf("Get Reference Error: URI %s not found", requestObj.TextDocument.Uri))
+		return &responseObj
+	}
+	code := document.GetFormattedCode()
+	eof := document.EOF
+	responseParams := make([]lsp.TextEdit, 0, 4)
+
+	responseParams = append(responseParams, lsp.TextEdit{
+		Range: lsp.Range{
+			Start: lsp.Position{},
+			End: lsp.Position{
+				Line:      uint(eof.Line),
+				Character: uint(eof.Character),
+			},
+		},
+		NewText: code,
+	})
 
 	responseObj.Result = responseParams
 	return &responseObj

@@ -29,3 +29,8 @@ type Location struct {
 	Uri      string `json:"uri"`
 	LocRange Range  `json:"range"`
 }
+
+type TextEdit struct {
+	Range   Range  `json:"range"`
+	NewText string `json:"newText"`
+}

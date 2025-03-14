@@ -10,14 +10,17 @@ import (
 /* document level logic like language features and state are handled here*/
 
 type DocumentService struct {
+	AST         []lox.Node
 	Definitions []lox.Node
 	References  map[lox.Token][]lox.Token
 	Errors      []lox.CompileError
 	Uri         string
 	Mutex       sync.Mutex
+	EOF         lox.Token
 }
 
 func (loxService *DocumentService) Initialize() {
+	loxService.AST = make([]lox.Node, 0)
 	loxService.Definitions = make([]lox.Node, 0)
 	loxService.References = make(map[lox.Token][]lox.Token)
 	loxService.Errors = make([]lox.CompileError, 0)
@@ -27,13 +30,15 @@ func (loxService *DocumentService) ParseCode(code string, version int) {
 	defer loxService.Mutex.Unlock()
 	loxService.Mutex.Lock()
 
-	compileErrors, definitions, references, err := lox.ParseCode(code)
+	tokens, ast, compileErrors, definitions, references, err := lox.ParseCode(code)
 	if err != nil {
 		return
 	}
+	loxService.AST = ast
 	loxService.Definitions = definitions
 	loxService.Errors = compileErrors
 	loxService.References = references
+	loxService.EOF = tokens[len(tokens)-1]
 	responseObj := diagnosticNotification(compileErrors, loxService.Uri, version)
 	response, err := json.Marshal(responseObj)
 	sendNotification(response)
@@ -64,6 +69,11 @@ func (loxService *DocumentService) GetDefinition(position lsp.Position) (lsp.Pos
 	}
 	return position, false
 
+}
+
+func (loxService *DocumentService) GetFormattedCode() string {
+	var formatter lox.Formatter
+	return formatter.Format(loxService.AST)
 }
 
 func (loxService *DocumentService) GetReferences(position lsp.Position, addDefinition bool) []lsp.Position {
