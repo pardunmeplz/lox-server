@@ -48,6 +48,15 @@ type DefinitionParams struct {
 	TextDocumentPositionParams `json:",inline"`
 }
 
+type ReferenceContext struct {
+	IncludeDeclaration bool `json:"includeDeclaration"`
+}
+
+type ReferenceParams struct {
+	TextDocumentPositionParams `json:",inline"`
+	Context                    ReferenceContext `json:"context"`
+}
+
 type Registration struct {
 	Id              string `json:"id"`
 	Method          string `json:"method"`

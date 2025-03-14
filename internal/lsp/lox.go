@@ -2,7 +2,6 @@ package lsp
 
 import (
 	"encoding/json"
-	"fmt"
 	"lox-server/internal/lox"
 	lsp "lox-server/internal/lsp/types"
 	"sync"
@@ -11,31 +10,37 @@ import (
 /* document level logic like language features and state are handled here*/
 
 type DocumentService struct {
-	Definables []lox.Node
-	Errors     []lox.CompileError
-	Uri        string
-	Mutex      sync.Mutex
+	Definitions []lox.Node
+	References  map[lox.Token][]lox.Token
+	Errors      []lox.CompileError
+	Uri         string
+	Mutex       sync.Mutex
+}
+
+func (loxService *DocumentService) Initialize() {
+	loxService.Definitions = make([]lox.Node, 0)
+	loxService.References = make(map[lox.Token][]lox.Token)
+	loxService.Errors = make([]lox.CompileError, 0)
 }
 
 func (loxService *DocumentService) ParseCode(code string, version int) {
-	compileErrors, definables, err := lox.ParseCode(code)
+	defer loxService.Mutex.Unlock()
+	loxService.Mutex.Lock()
+
+	compileErrors, definitions, references, err := lox.ParseCode(code)
 	if err != nil {
 		return
 	}
-	loxService.Definables = definables
+	loxService.Definitions = definitions
 	loxService.Errors = compileErrors
-
-	for _, definable := range definables {
-		check, _ := json.Marshal(definable)
-		serverState.logger.Print(fmt.Sprintf("LOGGER : %s", check))
-	}
+	loxService.References = references
 	responseObj := diagnosticNotification(compileErrors, loxService.Uri, version)
 	response, err := json.Marshal(responseObj)
 	sendNotification(response)
 }
 
 func (loxService *DocumentService) GetDefinition(position lsp.Position) lsp.Position {
-	for _, definable := range loxService.Definables {
+	for _, definable := range loxService.Definitions {
 		switch definable.(type) {
 		case *lox.Variable:
 			variable := definable.(*lox.Variable)
@@ -61,34 +66,35 @@ func (loxService *DocumentService) GetDefinition(position lsp.Position) lsp.Posi
 
 }
 
-// func processNotification(request) []byte {
-// 	switch request.Method {
-// 	case "textDocument/didOpen":
-// 		var document lsp.DidOpenTextDocumentParams
-// 		err := getRequestValues(&document, request)
-// 		if err != nil {
-// 			return nil
-// 		}
+func (loxService *DocumentService) GetReferences(position lsp.Position, addDefinition bool) []lsp.Position {
+	for definition := range loxService.References {
+		name, ok := definition.Value.(string)
+		if !ok {
+			continue
+		}
+		atCursor := definition.Line == int(position.Line) &&
+			definition.Character <= int(position.Character) &&
+			definition.Character+len(name) >= int(position.Character)
 
-// 	case "textDocument/didChange":
-// 		var document lsp.DidChangeTextDocumentParams
-// 		err := getRequestValues(&document, request)
-// 		if err != nil {
-// 			return nil
-// 		}
-// 		responseObj, err := diagnosticNotification(document.ContentChanges[0].Text, document.TextDocument.Uri, document.TextDocument.Version)
-// 		if err != nil {
-// 			serverState.logger.Print(fmt.Sprintf("Parse Error: %v\n", err))
-// 			return nil
-// 		}
-// 		response, err := json.Marshal(responseObj)
-// 		if err != nil {
-// 			serverState.logger.Print(fmt.Sprintf("invalid Response: %v\n", err))
-// 			return nil
-// 		}
-// 		return response
+		if atCursor {
+			response := make([]lsp.Position, 0, 4)
+			for _, reference := range loxService.References[definition] {
+				response = append(response, lsp.Position{
+					Line:      uint(reference.Line),
+					Character: uint(reference.Character),
+				})
 
-// 	}
-// 	return nil
+			}
 
-// }
+			if addDefinition {
+				response = append(response, lsp.Position{
+					Line:      uint(definition.Line),
+					Character: uint(definition.Character),
+				})
+			}
+			return response
+		}
+	}
+	return nil
+
+}

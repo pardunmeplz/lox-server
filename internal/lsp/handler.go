@@ -91,6 +91,7 @@ func processRequest(request lsp.JsonRpcRequest) (*lsp.JsonRpcResponse, error) {
 		}
 
 		serverState.documents[params.TextDocument.Uri] = &DocumentService{Uri: params.TextDocument.Uri}
+		serverState.documents[params.TextDocument.Uri].Initialize()
 		go (func() {
 			serverState.documents[params.TextDocument.Uri].ParseCode(params.TextDocument.Text, params.TextDocument.Version)
 		})()
@@ -117,6 +118,8 @@ func processRequest(request lsp.JsonRpcRequest) (*lsp.JsonRpcResponse, error) {
 		return nil, nil
 	case "textDocument/definition":
 		return protocolDefinition(request), nil
+	case "textDocument/references":
+		return protocolReferences(request), nil
 	}
 
 	return nil, fmt.Errorf("Invalid Method: %v", request.Method)

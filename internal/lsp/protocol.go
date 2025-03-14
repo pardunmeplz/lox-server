@@ -2,6 +2,7 @@ package lsp
 
 import (
 	"encoding/json"
+	"fmt"
 	"lox-server/internal/lox"
 	lsp "lox-server/internal/lsp/types"
 )
@@ -47,6 +48,7 @@ func protocolInitialize(request lsp.JsonRpcRequest) (*lsp.JsonRpcResponse, error
 					"change":    1,
 				},
 				"definitionProvider": true,
+				"referencesProvider": true,
 			},
 			"serverInfo": map[string]any{
 				"name":    "LoxServer",
@@ -71,6 +73,58 @@ func protocolShutdown(request lsp.JsonRpcRequest) *lsp.JsonRpcResponse {
 		Id:      request.Id,
 		Result:  nil,
 	}
+	return &responseObj
+}
+
+func protocolReferences(request lsp.JsonRpcRequest) *lsp.JsonRpcResponse {
+
+	responseObj := lsp.JsonRpcResponse{
+		JsonRpc: "2.0",
+		Id:      request.Id,
+		Result:  nil,
+	}
+
+	requestjson, err := json.Marshal(request.Params)
+	var requestObj lsp.ReferenceParams
+
+	if err != nil {
+		return &responseObj
+	}
+
+	err = json.Unmarshal(requestjson, &requestObj)
+
+	if err != nil {
+		return &responseObj
+	}
+
+	document, ok := serverState.documents[requestObj.TextDocument.Uri]
+	if !ok {
+		serverState.logger.Print(fmt.Sprintf("Get Reference Error: URI %s not found", requestObj.TextDocument.Uri))
+		return &responseObj
+	}
+
+	references := document.GetReferences(requestObj.Position, requestObj.Context.IncludeDeclaration)
+
+	if references == nil {
+		return &responseObj
+	}
+
+	test, err := json.Marshal(references)
+
+	serverState.logger.Print(fmt.Sprintf("References: %s", test))
+
+	responseParams := make([]lsp.Location, 0, 4)
+	for _, reference := range references {
+		responseParams = append(responseParams, lsp.Location{
+			Uri: requestObj.TextDocument.Uri,
+			LocRange: lsp.Range{
+				Start: reference,
+				End:   reference,
+			},
+		})
+	}
+
+	responseObj.Result = responseParams
 	return &responseObj
 }
 

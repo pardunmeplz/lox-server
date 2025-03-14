@@ -57,6 +57,7 @@ type Parser struct {
 	currentToken    int
 	symbolMap       *SymbolMap
 	identifierNodes []Node
+	references      map[Token][]Token
 }
 
 func (parser *Parser) initialize(input []Token) {
@@ -68,6 +69,7 @@ func (parser *Parser) initialize(input []Token) {
 		previous:     nil,
 		currScope:    0,
 	}
+	parser.references = make(map[Token][]Token)
 }
 
 func (parser *Parser) isGlobal() bool { return parser.symbolMap.currScope == 0 }
@@ -102,9 +104,9 @@ func (parser *Parser) getDefinitionInScope(name string) (Token, bool) {
 	return token, isPresent
 }
 
-func (parser *Parser) addIdentifier(node Node) {
+func (parser *Parser) addIdentifier(node Node, definition Token, reference Token) {
 	parser.identifierNodes = append(parser.identifierNodes, node)
-
+	parser.references[definition] = append(parser.references[definition], reference)
 }
 
 func (parser *Parser) addDefinition(token Token) {
@@ -118,16 +120,22 @@ func (parser *Parser) addDefinition(token Token) {
 			parser.addError(fmt.Sprintf("%s is already declared in this scope at line %d", name, definition.Line+1))
 		}
 		parser.symbolMap.currentTable[name] = token
+		parser.references[token] = []Token{}
 	}
 }
 
-func (parser *Parser) Parse(input []Token) ([]Node, []Node, []CompileError) {
+func (parser *Parser) Parse(input []Token) ([]Node, []Node, map[Token][]Token, []CompileError) {
 	parser.initialize(input)
 	program := make([]Node, 0)
 	for token := parser.peekParser(); token.TokenType != EOF; token = parser.peekParser() {
 		program = append(program, parser.declaration())
 	}
-	return program, parser.identifierNodes, parser.errorList
+	for name := range parser.references {
+		if len(parser.references[name]) == 0 {
+			parser.addWarningAt("No usages after definition", name.Line, name.Character)
+		}
+	}
+	return program, parser.identifierNodes, parser.references, parser.errorList
 }
 
 func (parser *Parser) declaration() Node {
@@ -512,7 +520,7 @@ func (parser *Parser) primary() Node {
 		if !ok {
 			parser.addError(fmt.Sprintf("%s is not defined in current scope", name))
 		} else {
-			parser.addIdentifier(&result)
+			parser.addIdentifier(&result, definition, currToken)
 		}
 
 		return &result
@@ -549,6 +557,10 @@ func (parser *Parser) addError(message string) {
 
 func (parser *Parser) addWarning(message string) {
 	parser.errorList = append(parser.errorList, CompileError{Message: message, Line: parser.peekParser().Line, Char: parser.peekParser().Character, Severity: 2})
+}
+
+func (parser *Parser) addWarningAt(message string, line int, char int) {
+	parser.errorList = append(parser.errorList, CompileError{Message: message, Line: line, Char: char, Severity: 2})
 }
 
 func (parser *Parser) addErrorAt(message string, line int, char int) {
