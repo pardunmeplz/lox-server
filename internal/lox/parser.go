@@ -500,7 +500,7 @@ func (parser *Parser) primary() Node {
 	case parser.match(TRUE):
 		return &Primary{ValType: "boolean", Value: true}
 	case parser.match(FALSE):
-		return &Primary{ValType: "boolean", Value: true}
+		return &Primary{ValType: "boolean", Value: false}
 	case parser.match(NIL):
 		return &Primary{ValType: "nil", Value: nil}
 	case parser.match(THIS):

@@ -8,6 +8,7 @@ import (
 func PrintParse(code string) error {
 	var scanner Scanner
 	var parser Parser
+	var formatter Formatter
 	tokens, _, err := scanner.Scan(code)
 	if err != nil {
 		return err
@@ -15,12 +16,14 @@ func PrintParse(code string) error {
 	fmt.Println(tokens)
 
 	ast, _, _, errorList := parser.Parse(tokens)
+	formatCode := formatter.Format(ast)
 	printable, err := (json.Marshal(ast))
 	if err != nil {
 		return err
 	}
 	fmt.Println(errorList)
 	fmt.Println(string(printable))
+	fmt.Println(formatCode)
 	return nil
 }
 

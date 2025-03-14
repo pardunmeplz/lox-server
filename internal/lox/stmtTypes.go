@@ -4,7 +4,7 @@ type ExpressionStmt struct {
 	Expr Node
 }
 
-func (expr *ExpressionStmt) accept(visitor Visitor) {
+func (expr *ExpressionStmt) Accept(visitor Visitor) {
 	visitor.visitExprStmt(expr)
 }
 
@@ -12,7 +12,7 @@ type PrintStmt struct {
 	Expr Node
 }
 
-func (expr *PrintStmt) accept(visitor Visitor) {
+func (expr *PrintStmt) Accept(visitor Visitor) {
 	visitor.visitPrint(expr)
 }
 
@@ -20,7 +20,7 @@ type ReturnStmt struct {
 	Expr Node
 }
 
-func (expr *ReturnStmt) accept(visitor Visitor) {
+func (expr *ReturnStmt) Accept(visitor Visitor) {
 	visitor.visitReturn(expr)
 }
 
@@ -28,7 +28,7 @@ type BlockStmt struct {
 	Body []Node
 }
 
-func (expr *BlockStmt) accept(visitor Visitor) {
+func (expr *BlockStmt) Accept(visitor Visitor) {
 	visitor.visitBlock(expr)
 }
 
@@ -38,7 +38,7 @@ type IfStmt struct {
 	Else      Node
 }
 
-func (expr *IfStmt) accept(visitor Visitor) {
+func (expr *IfStmt) Accept(visitor Visitor) {
 	visitor.visitIf(expr)
 }
 
@@ -47,7 +47,7 @@ type VarDecl struct {
 	Value      Node
 }
 
-func (expr *VarDecl) accept(visitor Visitor) {
+func (expr *VarDecl) Accept(visitor Visitor) {
 	visitor.visitVarDecl(expr)
 }
 
@@ -56,7 +56,7 @@ type WhileStmt struct {
 	Then      Node
 }
 
-func (expr *WhileStmt) accept(visitor Visitor) {
+func (expr *WhileStmt) Accept(visitor Visitor) {
 	visitor.visitWhile(expr)
 }
 
@@ -66,7 +66,7 @@ type FuncDecl struct {
 	Parameters []Node
 }
 
-func (expr *FuncDecl) accept(visitor Visitor) {
+func (expr *FuncDecl) Accept(visitor Visitor) {
 	visitor.visitFuncDecl(expr)
 }
 
@@ -76,6 +76,6 @@ type ClassDecl struct {
 	Body   []Node
 }
 
-func (expr *ClassDecl) accept(visitor Visitor) {
+func (expr *ClassDecl) Accept(visitor Visitor) {
 	visitor.visitClassDecl(expr)
 }

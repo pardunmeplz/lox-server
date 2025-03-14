@@ -1,7 +1,7 @@
 package lox
 
 type Node interface {
-	accept(Visitor)
+	Accept(Visitor)
 }
 
 type Visitor interface {
@@ -31,7 +31,7 @@ type Primary struct {
 	ValType string
 }
 
-func (expr *Primary) accept(visitor Visitor) {
+func (expr *Primary) Accept(visitor Visitor) {
 	visitor.visitPrimary(expr)
 }
 
@@ -41,7 +41,7 @@ type Binary struct {
 	Operation int
 }
 
-func (expr *Binary) accept(visitor Visitor) {
+func (expr *Binary) Accept(visitor Visitor) {
 	visitor.visitBinary(expr)
 }
 
@@ -50,7 +50,7 @@ type Unary struct {
 	Operation  int
 }
 
-func (expr *Unary) accept(visitor Visitor) {
+func (expr *Unary) Accept(visitor Visitor) {
 	visitor.visitUnary(expr)
 }
 
@@ -58,7 +58,7 @@ type Group struct {
 	Expression Node
 }
 
-func (expr *Group) accept(visitor Visitor) {
+func (expr *Group) Accept(visitor Visitor) {
 	visitor.visitGroup(expr)
 }
 
@@ -67,7 +67,7 @@ type Variable struct {
 	Definition Token
 }
 
-func (expr *Variable) accept(visitor Visitor) {
+func (expr *Variable) Accept(visitor Visitor) {
 	visitor.visitVariable(expr)
 }
 
@@ -75,7 +75,7 @@ type This struct {
 	Identifier Token
 }
 
-func (expr *This) accept(visitor Visitor) {
+func (expr *This) Accept(visitor Visitor) {
 	visitor.visitThis(expr)
 }
 
@@ -84,7 +84,7 @@ type Super struct {
 	Property   Token
 }
 
-func (expr *Super) accept(visitor Visitor) {
+func (expr *Super) Accept(visitor Visitor) {
 	visitor.visitSuper(expr)
 }
 
@@ -93,7 +93,7 @@ type Assignment struct {
 	Identifier Node
 }
 
-func (expr *Assignment) accept(visitor Visitor) {
+func (expr *Assignment) Accept(visitor Visitor) {
 	visitor.visitAssignment(expr)
 }
 
@@ -102,7 +102,7 @@ type Call struct {
 	Argument []Node
 }
 
-func (expr *Call) accept(visitor Visitor) {
+func (expr *Call) Accept(visitor Visitor) {
 	visitor.visitCall(expr)
 }
 
@@ -111,6 +111,6 @@ type GetExpr struct {
 	Property Token
 }
 
-func (expr *GetExpr) accept(visitor Visitor) {
+func (expr *GetExpr) Accept(visitor Visitor) {
 	visitor.visitGetExpr(expr)
 }
