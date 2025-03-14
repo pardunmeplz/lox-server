@@ -1,6 +1,6 @@
 # **LoxServer**  
 
-LoxServer is a **hobby implementation** of a **Language Server Protocol (LSP)** for the **Lox programming language**, written in **Go**. The project aims to provide LSP support for diagnostics, autocompletion, and navigation in lox.  
+LoxServer is a **hobby implementation** of a **Language Server Protocol (LSP)** for the **Lox programming language**, written in **Go**. The project aims to provide LSP support for diagnostics, formatting, autocompletion, and navigation in lox.  
 
 ## **🚀 Getting Started**  
 
@@ -30,6 +30,7 @@ go run cmd/lsp/main.go
 - [ ] **Hover (`textDocument/hover`)** – Provide information on symbols.  
 - [x] **Go-to Definition (`textDocument/definition`)** – Jump to symbol definitions.  
 - [x] **References (`textDocument/references`)** – Jump to symbol references.
+- [ ] **Formatting (``)** - Auto format code
 - [ ] **Auto-Completion (`textDocument/completion`)** – Suggest keywords and variables.  
 
 ## **📖 Resources & References**  
