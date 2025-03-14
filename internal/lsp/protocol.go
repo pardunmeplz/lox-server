@@ -149,7 +149,7 @@ func protocolDefinition(request lsp.JsonRpcRequest) *lsp.JsonRpcResponse {
 		return &responseObj
 	}
 
-	definition := serverState.documents[requestObj.TextDocument.Uri].GetDefinition(requestObj.Position)
+	definition, _ := serverState.documents[requestObj.TextDocument.Uri].GetDefinition(requestObj.Position)
 
 	responseObj.Result = lsp.Location{
 		Uri: requestObj.TextDocument.Uri,

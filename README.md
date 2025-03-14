@@ -29,6 +29,7 @@ go run cmd/lsp/main.go
 - [x] **Diagnostics (`textDocument/publishDiagnostics`)** – Show syntax errors in real-time.  
 - [ ] **Hover (`textDocument/hover`)** – Provide information on symbols.  
 - [x] **Go-to Definition (`textDocument/definition`)** – Jump to symbol definitions.  
+- [x] **References (`textDocument/references`)** – Jump to symbol references.
 - [ ] **Auto-Completion (`textDocument/completion`)** – Suggest keywords and variables.  
 
 ## **📖 Resources & References**  

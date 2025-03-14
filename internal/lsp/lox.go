@@ -39,7 +39,7 @@ func (loxService *DocumentService) ParseCode(code string, version int) {
 	sendNotification(response)
 }
 
-func (loxService *DocumentService) GetDefinition(position lsp.Position) lsp.Position {
+func (loxService *DocumentService) GetDefinition(position lsp.Position) (lsp.Position, bool) {
 	for _, definable := range loxService.Definitions {
 		switch definable.(type) {
 		case *lox.Variable:
@@ -56,17 +56,18 @@ func (loxService *DocumentService) GetDefinition(position lsp.Position) lsp.Posi
 				return lsp.Position{
 					Line:      uint(variable.Definition.Line),
 					Character: uint(variable.Definition.Character),
-				}
+				}, true
 			}
 		default:
 			continue
 		}
 	}
-	return position
+	return position, false
 
 }
 
 func (loxService *DocumentService) GetReferences(position lsp.Position, addDefinition bool) []lsp.Position {
+	// check if cursor is on a definition
 	for definition := range loxService.References {
 		name, ok := definition.Value.(string)
 		if !ok {
@@ -95,6 +96,13 @@ func (loxService *DocumentService) GetReferences(position lsp.Position, addDefin
 			return response
 		}
 	}
+
+	// check if cusor is on a reference
+	definition, found := loxService.GetDefinition(position)
+	if found {
+		return loxService.GetReferences(definition, addDefinition)
+	}
+
 	return nil
 
 }
