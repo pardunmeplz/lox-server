@@ -231,6 +231,7 @@ func (parser *Parser) parameters() []Node {
 }
 
 func (parser *Parser) statement() Node {
+	fmt.Printf(">>%s", parser.peekParser().Value)
 	switch {
 	case parser.match(PRINT):
 		expr := parser.expression()
@@ -528,6 +529,12 @@ func (parser *Parser) primary() Node {
 		expr := parser.expression()
 		parser.consume(PARANRIGHT, fmt.Sprintf("Expected ')' at line %d character %d", currToken.Line, currToken.Character))
 		return &Group{Expression: expr}
+
+	case parser.match(EOF):
+		parser.addError("Unexpected end of file")
+	default:
+		parser.addError(fmt.Sprintf("Unexpedted token at line %d character %d", currToken.Line, currToken.Character))
+		parser.advanceParser()
 	}
 	return &Primary{}
 }
