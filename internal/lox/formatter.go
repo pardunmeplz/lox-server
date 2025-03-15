@@ -41,7 +41,7 @@ func (formatter *Formatter) visitPrimary(primary *Primary) {
 		}
 	case "string":
 		value := primary.Value.(string)
-		formatter.code.WriteString(value)
+		formatter.code.WriteString(fmt.Sprintf("\"%s\"", value))
 	}
 
 }
@@ -80,9 +80,9 @@ func (formatter *Formatter) visitBinary(binary *Binary) {
 func (formatter *Formatter) visitUnary(unary *Unary) {
 	switch unary.Operation {
 	case MINUS:
-		formatter.code.WriteString("- ")
+		formatter.code.WriteString("-")
 	case BANG:
-		formatter.code.WriteString("! ")
+		formatter.code.WriteString("!")
 	}
 	unary.Expression.Accept(formatter)
 }
