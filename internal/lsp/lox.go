@@ -2,10 +2,8 @@ package lsp
 
 import (
 	"encoding/json"
-	"fmt"
 	"lox-server/internal/lox"
 	lsp "lox-server/internal/lsp/types"
-	"strings"
 	"sync"
 )
 
@@ -71,33 +69,20 @@ func (loxService *DocumentService) ParseCode(code string, version int) {
 
 func (loxService *DocumentService) GetCompletion(position lsp.Position) []lsp.CompletionItem {
 	items := make([]lsp.CompletionItem, 0, 0)
-	token := loxService.GetToken(position)
-	serverState.logger.Print(fmt.Sprintf("%d\n", token.TokenType))
-	if token.TokenType != lox.IDENTIFIER {
-		return items
-	}
-	value, ok := token.Value.(string)
-	if !ok {
-		return items
-	}
 	for definition := range loxService.SymbolMap {
 		label, ok := definition.Value.(string)
 		if !ok {
 			continue
 		}
-		if strings.HasPrefix(label, value) {
-			items = append(items, lsp.CompletionItem{
-				Label: label,
-			})
-		}
+		items = append(items, lsp.CompletionItem{
+			Label: label,
+		})
 	}
 
 	for _, label := range keywords {
-		if strings.HasPrefix(label, value) {
-			items = append(items, lsp.CompletionItem{
-				Label: label,
-			})
-		}
+		items = append(items, lsp.CompletionItem{
+			Label: label,
+		})
 	}
 	return items
 
