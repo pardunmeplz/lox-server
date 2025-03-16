@@ -57,6 +57,10 @@ type ReferenceParams struct {
 	Context                    ReferenceContext `json:"context"`
 }
 
+type CompletionParams struct {
+	TextDocumentPositionParams `json:",inline"`
+}
+
 type DocumentFormattingParams struct {
 	TextDocument TextDocumentIdentifier `json:"textDocument"`
 	Options      FormattingOptions      `json:"options"`

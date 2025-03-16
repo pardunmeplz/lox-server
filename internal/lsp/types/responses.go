@@ -34,3 +34,17 @@ type TextEdit struct {
 	Range   Range  `json:"range"`
 	NewText string `json:"newText"`
 }
+
+type CompletionItemLabelDetails struct {
+	Detail      string `json:"detail"`
+	Description string `json:"description"`
+}
+
+type CompletionItem struct {
+	Label string `json:"label"`
+}
+
+type CompletionList struct {
+	IsIncomplete bool             `json:"isIncomplete"`
+	Items        []CompletionItem `json:"items"`
+}

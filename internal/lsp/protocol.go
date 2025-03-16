@@ -50,6 +50,7 @@ func protocolInitialize(request lsp.JsonRpcRequest) (*lsp.JsonRpcResponse, error
 				"definitionProvider":         true,
 				"referencesProvider":         true,
 				"documentFormattingProvider": true,
+				"completionProvider":         map[string]any{},
 			},
 			"serverInfo": map[string]any{
 				"name":    "LoxServer",
@@ -170,6 +171,41 @@ func protocolFormatting(request lsp.JsonRpcRequest) *lsp.JsonRpcResponse {
 	})
 
 	responseObj.Result = responseParams
+	return &responseObj
+}
+
+func protocolCompletion(request lsp.JsonRpcRequest) *lsp.JsonRpcResponse {
+	responseObj := lsp.JsonRpcResponse{
+		JsonRpc: "2.0",
+		Id:      request.Id,
+		Result:  nil,
+	}
+
+	requestjson, err := json.Marshal(request.Params)
+	var requestObj lsp.CompletionParams
+
+	if err != nil {
+		return &responseObj
+	}
+
+	err = json.Unmarshal(requestjson, &requestObj)
+
+	if err != nil {
+		return &responseObj
+	}
+
+	document, ok := serverState.documents[requestObj.TextDocument.Uri]
+	if !ok {
+		serverState.logger.Print(fmt.Sprintf("Get Reference Error: URI %s not found", requestObj.TextDocument.Uri))
+		return &responseObj
+	}
+	items := document.GetCompletion(requestObj.Position)
+
+	responseObj.Result = lsp.CompletionList{
+		IsIncomplete: true,
+		Items:        items,
+	}
+
 	return &responseObj
 }
 

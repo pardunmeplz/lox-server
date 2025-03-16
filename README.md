@@ -27,10 +27,9 @@ go run cmd/lsp/main.go
     - [ ] **Type Checks** - Do statically viable type checks
     - [ ] **Panic - Recover** - Ignore errors caused by a preceding error to avoid unnecessary error reporting 
 - [x] **Diagnostics (`textDocument/publishDiagnostics`)** – Show syntax errors in real-time.  
-- [ ] **Hover (`textDocument/hover`)** – Provide information on symbols.  
 - [x] **Go-to Definition (`textDocument/definition`)** – Jump to symbol definitions.  
 - [x] **References (`textDocument/references`)** – Jump to symbol references.
-- [ ] **Formatting (`textDocument/formatting`)** - Auto format code
+- [x] **Formatting (`textDocument/formatting`)** - Auto format code
 - [ ] **Auto-Completion (`textDocument/completion`)** – Suggest keywords and variables.  
 
 ## **📖 Resources & References**  
