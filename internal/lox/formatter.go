@@ -10,7 +10,14 @@ type Formatter struct {
 	scope int
 }
 
-// visitNewLine implements Visitor.
+func (formatter *Formatter) visitComment(comment *Comment) {
+	value, ok := comment.Comment.Value.(string)
+	if !ok {
+		return
+	}
+	formatter.code.WriteString(fmt.Sprintf("//%s\n", value))
+}
+
 func (formatter *Formatter) visitNewLine(*NewLine) {
 	formatter.addIndentation()
 	formatter.code.WriteString("\n")

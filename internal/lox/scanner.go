@@ -170,9 +170,17 @@ func (scannerState *Scanner) scanToken() error {
 		}
 	case '/':
 		if scannerState.matchScanner('/') {
+			start := scannerState.current
 			for scannerState.peekScannerNext() != '\n' && len(*scannerState.source) > scannerState.current {
 				scannerState.advanceScanner()
 			}
+			scannerState.tokens = append(scannerState.tokens,
+				Token{
+					TokenType: COMMENT,
+					Line:      scannerState.line,
+					Character: scannerState.currChar,
+					Value:     fmt.Sprintf("%s", (*scannerState.source)[start:scannerState.current]),
+				})
 			return nil
 		}
 		scannerState.tokens = append(scannerState.tokens, Token{TokenType: SLASH, Line: scannerState.line, Character: scannerState.currChar})

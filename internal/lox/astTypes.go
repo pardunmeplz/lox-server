@@ -25,6 +25,16 @@ type Visitor interface {
 	visitFuncDecl(*FuncDecl)
 	visitClassDecl(*ClassDecl)
 	visitNewLine(*NewLine)
+	visitComment(*Comment)
+}
+
+type Comment struct {
+	Comment Token
+	Inline  bool
+}
+
+func (expr *Comment) Accept(visitor Visitor) {
+	visitor.visitComment(expr)
 }
 
 type Primary struct {

@@ -148,6 +148,8 @@ func (parser *Parser) declaration() Node {
 		return parser.classDeclaration()
 	case parser.match(NEWLINE):
 		return &NewLine{Token: parser.peekPrevious()}
+	case parser.match(COMMENT):
+		return &Comment{Comment: parser.peekPrevious()}
 	default:
 		return parser.statement()
 	}
@@ -536,6 +538,7 @@ func (parser *Parser) primary() Node {
 
 	case parser.peekParser().TokenType == (EOF):
 		parser.addError("Unexpected end of file")
+
 	default:
 		parser.addError(fmt.Sprintf("Unexpedted token at line %d character %d", currToken.Line, currToken.Character))
 		parser.advanceParser()
