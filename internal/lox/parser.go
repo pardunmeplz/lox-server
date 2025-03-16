@@ -534,7 +534,7 @@ func (parser *Parser) primary() Node {
 		parser.consume(PARANRIGHT, fmt.Sprintf("Expected ')' at line %d character %d", currToken.Line, currToken.Character))
 		return &Group{Expression: expr}
 
-	case parser.match(EOF):
+	case parser.peekParser().TokenType == (EOF):
 		parser.addError("Unexpected end of file")
 	default:
 		parser.addError(fmt.Sprintf("Unexpedted token at line %d character %d", currToken.Line, currToken.Character))
