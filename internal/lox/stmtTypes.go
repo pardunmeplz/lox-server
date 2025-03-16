@@ -43,8 +43,9 @@ func (expr *IfStmt) Accept(visitor Visitor) {
 }
 
 type VarDecl struct {
-	Identifier Token
-	Value      Node
+	Identifier  Token
+	Value       Node
+	Initialized bool
 }
 
 func (expr *VarDecl) Accept(visitor Visitor) {
@@ -78,4 +79,12 @@ type ClassDecl struct {
 
 func (expr *ClassDecl) Accept(visitor Visitor) {
 	visitor.visitClassDecl(expr)
+}
+
+type NewLine struct {
+	Token Token
+}
+
+func (expr *NewLine) Accept(visitor Visitor) {
+	visitor.visitNewLine(expr)
 }

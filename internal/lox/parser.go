@@ -146,6 +146,8 @@ func (parser *Parser) declaration() Node {
 		return parser.funcDeclaration()
 	case parser.match(CLASS):
 		return parser.classDeclaration()
+	case parser.match(NEWLINE):
+		return &NewLine{Token: parser.peekPrevious()}
 	default:
 		return parser.statement()
 	}
@@ -186,12 +188,14 @@ func (parser *Parser) varDeclaration() Node {
 	parser.consume(IDENTIFIER, "Expected identifier after var declaration")
 
 	var value Node = &Primary{ValType: "nil", Value: nil}
+	initialzied := false
 	if parser.match(EQUAL) {
 		value = parser.expression()
+		initialzied = true
 	}
 	parser.consume(SEMICOLON, "Expected ; at end of statement")
 
-	return &VarDecl{Identifier: identifier, Value: value}
+	return &VarDecl{Identifier: identifier, Value: value, Initialized: initialzied}
 
 }
 

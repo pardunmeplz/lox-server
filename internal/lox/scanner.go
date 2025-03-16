@@ -2,6 +2,7 @@ package lox
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"unicode"
 )
@@ -20,6 +21,7 @@ type Scanner struct {
 	currChar      int
 	current       int
 	source        *string
+	Formatting    bool
 }
 
 func (scannerState *Scanner) initializeScanner(code *string) {
@@ -155,8 +157,17 @@ func (scannerState *Scanner) scanToken() error {
 	case '\t':
 	case '\r':
 	case '\n':
+		blanks := []rune{' ', '\t', '\r', '\n'}
 		scannerState.line++
 		scannerState.currChar = 0
+		for len(*scannerState.source) > scannerState.current && slices.Contains(blanks, scannerState.peekScanner()) {
+			if scannerState.peekScanner() == '\n' {
+				scannerState.line++
+				scannerState.currChar = 0
+				scannerState.tokens = append(scannerState.tokens, Token{TokenType: NEWLINE, Line: scannerState.line, Character: scannerState.currChar})
+			}
+			scannerState.advanceScanner()
+		}
 	case '/':
 		if scannerState.matchScanner('/') {
 			for scannerState.peekScannerNext() != '\n' && len(*scannerState.source) > scannerState.current {

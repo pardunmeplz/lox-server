@@ -24,6 +24,7 @@ type Visitor interface {
 	visitWhile(*WhileStmt)
 	visitFuncDecl(*FuncDecl)
 	visitClassDecl(*ClassDecl)
+	visitNewLine(*NewLine)
 }
 
 type Primary struct {

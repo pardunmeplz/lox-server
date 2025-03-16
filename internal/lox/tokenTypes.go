@@ -40,4 +40,7 @@ const (
 	SEMICOLON
 	DOT
 	COMMA
+
+	COMMENT
+	NEWLINE
 )

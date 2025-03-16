@@ -10,6 +10,12 @@ type Formatter struct {
 	scope int
 }
 
+// visitNewLine implements Visitor.
+func (formatter *Formatter) visitNewLine(*NewLine) {
+	formatter.addIndentation()
+	formatter.code.WriteString("\n")
+}
+
 func (formatter *Formatter) Format(ast []Node) string {
 	formatter.code.Reset()
 	for _, node := range ast {
@@ -180,7 +186,7 @@ func (formatter *Formatter) visitIf(ifStmt *IfStmt) {
 	formatter.addIndentation()
 	formatter.code.WriteString("if(")
 	ifStmt.Condition.Accept(formatter)
-	formatter.code.WriteString(")")
+	formatter.code.WriteString(") ")
 	ifStmt.Then.Accept(formatter)
 
 	if ifStmt.Else != nil {
@@ -200,7 +206,7 @@ func (formatter *Formatter) visitVarDecl(varDecl *VarDecl) {
 
 	formatter.code.WriteString(fmt.Sprintf("var %s", name))
 
-	if varDecl.Value != nil {
+	if varDecl.Initialized {
 		formatter.code.WriteString(" = ")
 		varDecl.Value.Accept(formatter)
 	}
