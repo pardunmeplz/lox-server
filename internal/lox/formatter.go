@@ -236,7 +236,7 @@ func (formatter *Formatter) visitFuncDecl(function *FuncDecl) {
 	if !ok {
 		return
 	}
-	formatter.code.WriteString(fmt.Sprintf("func %s(", name))
+	formatter.code.WriteString(fmt.Sprintf("fun %s(", name))
 
 	for i, param := range function.Parameters {
 		if i != 0 {
