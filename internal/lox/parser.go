@@ -51,6 +51,7 @@ type SymbolMap struct {
 	currScope    int
 	definitions  []Token
 	scopeRange   ScopeRange
+	scopeContext int // if scope is a function / class / loop ... etc
 }
 
 type ScopeRange struct {
@@ -69,6 +70,7 @@ type Parser struct {
 	identifierNodes []Node
 	references      map[Token][]Token
 	scopeTable      map[Token]ScopeRange
+	functionContext int // global / function / method
 }
 
 func (parser *Parser) initialize(input []Token) {
@@ -79,19 +81,22 @@ func (parser *Parser) initialize(input []Token) {
 		currentTable: make(map[string]Token),
 		previous:     nil,
 		currScope:    0,
+		scopeContext: GLOBAL_CONTEXT,
 	}
 	parser.references = make(map[Token][]Token)
 	parser.scopeTable = make(map[Token]ScopeRange)
+	parser.functionContext = GLOBAL_CONTEXT
 }
 
 func (parser *Parser) isGlobal() bool { return parser.symbolMap.currScope == 0 }
 
-func (parser *Parser) raiseScope(startLine int, startChar int) {
+func (parser *Parser) raiseScope(startLine int, startChar int, scopeContext int) {
 	parser.symbolMap = &SymbolMap{
 		currentTable: make(map[string]Token),
 		definitions:  make([]Token, 0),
 		previous:     parser.symbolMap,
 		currScope:    parser.symbolMap.currScope + 1,
+		scopeContext: scopeContext,
 		scopeRange: ScopeRange{
 			Global:    false,
 			StartChar: startChar,
@@ -174,7 +179,7 @@ func (parser *Parser) declaration() Node {
 	case parser.match(VAR):
 		return parser.varDeclaration()
 	case parser.match(FUN):
-		return parser.funcDeclaration()
+		return parser.funcDeclaration(FUNCTION_CONTEXT)
 	case parser.match(CLASS):
 		return parser.classDeclaration()
 	case parser.match(NEWLINE):
@@ -182,7 +187,7 @@ func (parser *Parser) declaration() Node {
 	case parser.match(COMMENT):
 		return &Comment{Comment: parser.peekPrevious()}
 	default:
-		return parser.statement()
+		return parser.statement(GLOBAL_CONTEXT)
 	}
 }
 
@@ -200,10 +205,10 @@ func (parser *Parser) classDeclaration() Node {
 
 	parser.consume(BRACELEFT, "Expected '{' before class body")
 	brace := parser.peekPrevious()
-	parser.raiseScope(brace.Line, brace.Character)
+	parser.raiseScope(brace.Line, brace.Character, CLASS_CONTEXT)
 	methods := make([]Node, 0)
 	for token := parser.peekParser().TokenType; token != BRACERIGHT && token != EOF; token = parser.peekParser().TokenType {
-		method := parser.funcDeclaration()
+		method := parser.funcDeclaration(METHOD_CONTEXT)
 		if method == nil {
 			continue
 		}
@@ -234,7 +239,7 @@ func (parser *Parser) varDeclaration() Node {
 
 }
 
-func (parser *Parser) funcDeclaration() Node {
+func (parser *Parser) funcDeclaration(functionContext int) Node {
 	identifier := parser.peekParser()
 	parser.addDefinition(identifier)
 	parser.consume(IDENTIFIER, "Expected identifier for function name")
@@ -246,9 +251,14 @@ func (parser *Parser) funcDeclaration() Node {
 	}
 
 	parser.consume(BRACELEFT, "Expected { at start of function body")
-	body := parser.block()
+	currentFunctionContext := parser.functionContext
+	parser.functionContext = functionContext
 
-	return &FuncDecl{Name: identifier, Body: body, Parameters: parameters}
+	body := parser.block(functionContext)
+
+	parser.functionContext = currentFunctionContext
+
+	return &FuncDecl{Name: identifier, Body: body, Parameters: parameters, FunctionType: functionContext}
 
 }
 
@@ -269,7 +279,7 @@ func (parser *Parser) parameters() []Node {
 
 }
 
-func (parser *Parser) statement() Node {
+func (parser *Parser) statement(scopeContext int) Node {
 	fmt.Printf(">>%s", parser.peekParser().Value)
 	switch {
 	case parser.match(PRINT):
@@ -278,15 +288,21 @@ func (parser *Parser) statement() Node {
 		return &PrintStmt{Expr: expr}
 
 	case parser.match(RETURN):
+		if parser.functionContext == GLOBAL_CONTEXT {
+			parser.addError("Unexpected Return statement outside of functions or methods")
+		}
 		if parser.match(SEMICOLON) {
-			return &ReturnStmt{Expr: &Primary{ValType: "nil", Value: nil}}
+			return &ReturnStmt{Expr: &Primary{ValType: "nil", Value: nil}, ReturnsValue: false}
 		}
 		expr := parser.expression()
 		parser.consume(SEMICOLON, "Expected ; at end of statement")
-		return &PrintStmt{Expr: expr}
+		return &ReturnStmt{Expr: expr, ReturnsValue: true}
 
 	case parser.match(BRACELEFT):
-		return parser.block()
+		if scopeContext == GLOBAL_CONTEXT {
+			return parser.block(BLOCK_CONTEXT)
+		}
+		return parser.block(scopeContext)
 
 	case parser.match(IF):
 		return parser.ifStmt()
@@ -308,9 +324,9 @@ func (parser *Parser) exprStmt() Node {
 	return &ExpressionStmt{Expr: expr}
 }
 
-func (parser *Parser) block() Node {
+func (parser *Parser) block(scopeContext int) Node {
 	brace := parser.peekPrevious()
-	parser.raiseScope(brace.Line, brace.Character)
+	parser.raiseScope(brace.Line, brace.Character, scopeContext)
 	body := make([]Node, 0)
 	for token := parser.peekParser(); token.TokenType != EOF && token.TokenType != BRACERIGHT; token = parser.peekParser() {
 		body = append(body, parser.declaration())
@@ -326,11 +342,11 @@ func (parser *Parser) ifStmt() Node {
 	condition := parser.expression()
 	parser.consume(PARANRIGHT, "Expected ')' after condition")
 
-	thenBranch := parser.statement()
+	thenBranch := parser.statement(IF_CONTEXT)
 	var elseBranch Node = nil
 
 	if parser.match(ELSE) {
-		elseBranch = parser.statement()
+		elseBranch = parser.statement(IF_CONTEXT)
 	}
 
 	return &IfStmt{Condition: condition, Then: thenBranch, Else: elseBranch}
@@ -341,7 +357,7 @@ func (parser *Parser) whileStmt() Node {
 	condition := parser.expression()
 	parser.consume(PARANRIGHT, "Expected ')' after condition")
 
-	body := parser.statement()
+	body := parser.statement(WHILE_CONTEXT)
 
 	return &WhileStmt{Condition: condition, Then: body}
 }
@@ -372,7 +388,7 @@ func (parser *Parser) forStmt() Node {
 
 	parser.consume(PARANRIGHT, "Expected ')' before body")
 
-	loop := &WhileStmt{Condition: condition, Then: parser.statement()}
+	loop := &WhileStmt{Condition: condition, Then: parser.statement(FOR_CONTEXT)}
 
 	if assign != nil {
 		loop.Then = &BlockStmt{Body: []Node{loop.Then, assign}}

@@ -17,7 +17,8 @@ func (expr *PrintStmt) Accept(visitor Visitor) {
 }
 
 type ReturnStmt struct {
-	Expr Node
+	Expr         Node
+	ReturnsValue bool
 }
 
 func (expr *ReturnStmt) Accept(visitor Visitor) {
@@ -62,9 +63,10 @@ func (expr *WhileStmt) Accept(visitor Visitor) {
 }
 
 type FuncDecl struct {
-	Name       Token
-	Body       Node
-	Parameters []Node
+	Name         Token
+	Body         Node
+	Parameters   []Node
+	FunctionType int
 }
 
 func (expr *FuncDecl) Accept(visitor Visitor) {

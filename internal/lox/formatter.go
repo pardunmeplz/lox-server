@@ -171,10 +171,15 @@ func (formatter *Formatter) visitPrint(printstmt *PrintStmt) {
 
 func (formatter *Formatter) visitReturn(returnStmt *ReturnStmt) {
 	formatter.addIndentation()
-	formatter.code.WriteString("returnStmt ")
-	returnStmt.Accept(formatter)
-	formatter.code.WriteString(";\n")
+	if returnStmt.ReturnsValue {
+		formatter.code.WriteString("return ")
+		returnStmt.Expr.Accept(formatter)
+		formatter.code.WriteString(";\n")
+	} else {
+		formatter.code.WriteString("return;\n")
+	}
 }
+
 func (formatter *Formatter) visitBlock(block *BlockStmt) {
 	formatter.addIndentation()
 	formatter.code.WriteString("{\n")
@@ -236,8 +241,11 @@ func (formatter *Formatter) visitFuncDecl(function *FuncDecl) {
 	if !ok {
 		return
 	}
-	formatter.code.WriteString(fmt.Sprintf("fun %s(", name))
-
+	if function.FunctionType == METHOD_CONTEXT {
+		formatter.code.WriteString(fmt.Sprintf("%s(", name))
+	} else {
+		formatter.code.WriteString(fmt.Sprintf("fun %s(", name))
+	}
 	for i, param := range function.Parameters {
 		if i != 0 {
 			formatter.code.WriteString(",")
