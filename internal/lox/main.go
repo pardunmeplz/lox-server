@@ -27,7 +27,7 @@ func PrintParse(code string) error {
 	return nil
 }
 
-func ParseCode(code string) ([]Token, []Node, []CompileError, []Node, map[Token][]Token, map[Token]ScopeRange, error) {
+func ParseCode(code string) ([]Token, []Node, []CompileError, []Node, map[Token][]Token, map[ScopeRange][]Token, error) {
 	var scanner Scanner
 	var parser Parser
 	tokens, scanErrors, err := scanner.Scan(code)

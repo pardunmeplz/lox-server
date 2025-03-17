@@ -46,20 +46,23 @@ import (
 */
 
 type SymbolMap struct {
-	currentTable map[string]Token
-	previous     *SymbolMap
-	currScope    int
-	definitions  []Token
-	scopeRange   ScopeRange
-	scopeContext int // if scope is a function / class / loop ... etc
+	currentTable    map[string]Token
+	previous        *SymbolMap
+	currScope       int
+	definitions     []Token
+	scopeRange      ScopeRange
+	functionContext int // global / function / method
+	classContext    int // global / class
 }
 
 type ScopeRange struct {
-	Global    bool
-	StartLine int
-	StartChar int
-	EndLine   int
-	EndChar   int
+	StartLine       int
+	StartChar       int
+	EndLine         int
+	EndChar         int
+	ScopeContext    int // if scope is a function / class / loop ... etc
+	FunctionContext int // global / function / method
+	ClassContext    int // global / class
 }
 
 type Parser struct {
@@ -69,8 +72,8 @@ type Parser struct {
 	symbolMap       *SymbolMap
 	identifierNodes []Node
 	references      map[Token][]Token
-	scopeTable      map[Token]ScopeRange
-	functionContext int // global / function / method
+	scopeTable      map[ScopeRange][]Token
+	scopeRanges     []ScopeRange
 }
 
 func (parser *Parser) initialize(input []Token) {
@@ -78,40 +81,48 @@ func (parser *Parser) initialize(input []Token) {
 	parser.currentToken = 0
 	parser.errorList = make([]CompileError, 0)
 	parser.symbolMap = &SymbolMap{
-		currentTable: make(map[string]Token),
-		previous:     nil,
-		currScope:    0,
-		scopeContext: GLOBAL_CONTEXT,
+		currentTable:    make(map[string]Token),
+		previous:        nil,
+		currScope:       0,
+		functionContext: GLOBAL_CONTEXT,
 	}
 	parser.references = make(map[Token][]Token)
-	parser.scopeTable = make(map[Token]ScopeRange)
-	parser.functionContext = GLOBAL_CONTEXT
+	parser.scopeTable = map[ScopeRange][]Token{}
 }
 
 func (parser *Parser) isGlobal() bool { return parser.symbolMap.currScope == 0 }
 
 func (parser *Parser) raiseScope(startLine int, startChar int, scopeContext int) {
+	functionContext := parser.symbolMap.functionContext
+	if scopeContext == GLOBAL_CONTEXT || scopeContext == METHOD_CONTEXT || scopeContext == FUNCTION_CONTEXT {
+		functionContext = scopeContext
+	}
+	classContext := parser.symbolMap.classContext
+	if scopeContext == GLOBAL_CONTEXT || scopeContext == CLASS_CONTEXT {
+		classContext = scopeContext
+	}
 	parser.symbolMap = &SymbolMap{
-		currentTable: make(map[string]Token),
-		definitions:  make([]Token, 0),
-		previous:     parser.symbolMap,
-		currScope:    parser.symbolMap.currScope + 1,
-		scopeContext: scopeContext,
+		currentTable:    make(map[string]Token),
+		definitions:     make([]Token, 0),
+		previous:        parser.symbolMap,
+		currScope:       parser.symbolMap.currScope + 1,
+		functionContext: functionContext,
+		classContext:    classContext,
 		scopeRange: ScopeRange{
-			Global:    false,
-			StartChar: startChar,
-			StartLine: startLine,
+			StartChar:       startChar,
+			StartLine:       startLine,
+			ScopeContext:    scopeContext,
+			FunctionContext: functionContext,
+			ClassContext:    classContext,
 		},
 	}
 }
 
 func (parser *Parser) closeScope(endLine int, endChar int) {
 	// append all scoped definitions to scopeTable
-	for _, token := range parser.symbolMap.definitions {
-		parser.symbolMap.scopeRange.EndChar = endChar
-		parser.symbolMap.scopeRange.EndLine = endLine
-		parser.scopeTable[token] = parser.symbolMap.scopeRange
-	}
+	parser.symbolMap.scopeRange.EndChar = endChar
+	parser.symbolMap.scopeRange.EndLine = endLine
+	parser.scopeTable[parser.symbolMap.scopeRange] = parser.symbolMap.definitions
 	// rollback to previous scope symbolMap
 	if parser.symbolMap != nil && parser.symbolMap.previous != nil {
 		parser.symbolMap = parser.symbolMap.previous
@@ -152,15 +163,11 @@ func (parser *Parser) addDefinition(token Token) {
 		parser.symbolMap.currentTable[name] = token
 		parser.references[token] = []Token{}
 	}
-	// add to scope table
-	if parser.symbolMap.currScope == 0 {
-		parser.scopeTable[token] = ScopeRange{Global: true}
-	} else {
-		parser.symbolMap.definitions = append(parser.symbolMap.definitions, token)
-	}
+	// add definitions to scope
+	parser.symbolMap.definitions = append(parser.symbolMap.definitions, token)
 }
 
-func (parser *Parser) Parse(input []Token) ([]Node, []Node, map[Token][]Token, map[Token]ScopeRange, []CompileError) {
+func (parser *Parser) Parse(input []Token) ([]Node, []Node, map[Token][]Token, map[ScopeRange][]Token, []CompileError) {
 	parser.initialize(input)
 	program := make([]Node, 0)
 	for token := parser.peekParser(); token.TokenType != EOF; token = parser.peekParser() {
@@ -171,6 +178,8 @@ func (parser *Parser) Parse(input []Token) ([]Node, []Node, map[Token][]Token, m
 			parser.addWarningAt("No usages after definition", name.Line, name.Character)
 		}
 	}
+	// add global definitions to scope table
+	parser.scopeTable[ScopeRange{FunctionContext: GLOBAL_CONTEXT, ClassContext: GLOBAL_CONTEXT, ScopeContext: GLOBAL_CONTEXT}] = parser.symbolMap.definitions
 	return program, parser.identifierNodes, parser.references, parser.scopeTable, parser.errorList
 }
 
@@ -208,6 +217,16 @@ func (parser *Parser) classDeclaration() Node {
 	parser.raiseScope(brace.Line, brace.Character, CLASS_CONTEXT)
 	methods := make([]Node, 0)
 	for token := parser.peekParser().TokenType; token != BRACERIGHT && token != EOF; token = parser.peekParser().TokenType {
+		if token == NEWLINE {
+			parser.match(NEWLINE)
+			methods = append(methods, &NewLine{Token: parser.peekPrevious()})
+			continue
+		}
+		if token == COMMENT {
+			parser.match(COMMENT)
+			methods = append(methods, &Comment{Comment: parser.peekPrevious(), Inline: false})
+			continue
+		}
 		method := parser.funcDeclaration(METHOD_CONTEXT)
 		if method == nil {
 			continue
@@ -251,12 +270,8 @@ func (parser *Parser) funcDeclaration(functionContext int) Node {
 	}
 
 	parser.consume(BRACELEFT, "Expected { at start of function body")
-	currentFunctionContext := parser.functionContext
-	parser.functionContext = functionContext
 
 	body := parser.block(functionContext)
-
-	parser.functionContext = currentFunctionContext
 
 	return &FuncDecl{Name: identifier, Body: body, Parameters: parameters, FunctionType: functionContext}
 
@@ -288,7 +303,7 @@ func (parser *Parser) statement(scopeContext int) Node {
 		return &PrintStmt{Expr: expr}
 
 	case parser.match(RETURN):
-		if parser.functionContext == GLOBAL_CONTEXT {
+		if parser.symbolMap.functionContext == GLOBAL_CONTEXT {
 			parser.addError("Unexpected Return statement outside of functions or methods")
 		}
 		if parser.match(SEMICOLON) {

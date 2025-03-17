@@ -14,37 +14,11 @@ type DocumentService struct {
 	Tokens     []lox.Token
 	References []lox.Node
 	SymbolMap  map[lox.Token][]lox.Token
-	ScopeTable map[lox.Token]lox.ScopeRange
+	ScopeTable map[lox.ScopeRange][]lox.Token
 	Errors     []lox.CompileError
 	Uri        string
 	Mutex      sync.Mutex
 	EOF        lox.Token
-}
-
-var keywords []string = []string{
-	//snippets
-	"fun name() {}",
-	"class Name {init(){ }}",
-	"for (var i = 0; i < ; i = i + 1) { }",
-	//keywords
-	"if",
-	"true",
-	"false",
-	"nil",
-	"else",
-	"for",
-	"while",
-	"fun",
-	"class",
-	"var",
-	"and",
-	"or",
-	"print",
-	"this",
-	"super",
-	"return",
-	// native functions
-	"clock",
 }
 
 func (loxService *DocumentService) Initialize() {
@@ -77,23 +51,35 @@ func (loxService *DocumentService) ParseCode(code string, version int) {
 }
 
 func (loxService *DocumentService) GetCompletion(position lsp.Position) []lsp.CompletionItem {
-	items := make([]lsp.CompletionItem, 0, 0)
-	for definition := range loxService.SymbolMap {
-		scopeRange := loxService.ScopeTable[definition]
+	items := make([]lsp.CompletionItem, 0)
+	var scope *lox.ScopeRange = nil
 
-		inScope := scopeRange.Global || (scopeRange.StartLine <= int(position.Line) &&
+	for scopeRange := range loxService.ScopeTable {
+		inScope := scopeRange.ScopeContext == lox.GLOBAL_CONTEXT || (scopeRange.StartLine <= int(position.Line) &&
 			scopeRange.EndLine >= int(position.Line))
 		if !inScope {
 			continue
 		}
-		label, ok := definition.Value.(string)
-		if !ok {
-			continue
+		if scope == nil { // deepest scopes come first
+			scope = &scopeRange
 		}
-		items = append(items, lsp.CompletionItem{
-			Label: label,
-		})
+
+		for _, definition := range loxService.ScopeTable[scopeRange] {
+			label, ok := definition.Value.(string)
+			if !ok {
+				continue
+			}
+			items = append(items, lsp.CompletionItem{
+				Label: label,
+			})
+
+		}
+
 	}
+	if scope.ScopeContext == lox.CLASS_CONTEXT {
+		items = make([]lsp.CompletionItem, 0)
+	}
+	keywords := getKeywords(scope.ScopeContext, scope.ClassContext, scope.FunctionContext)
 
 	for _, label := range keywords {
 		items = append(items, lsp.CompletionItem{
