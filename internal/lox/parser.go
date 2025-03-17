@@ -49,6 +49,16 @@ type SymbolMap struct {
 	currentTable map[string]Token
 	previous     *SymbolMap
 	currScope    int
+	definitions  []Token
+	scopeRange   ScopeRange
+}
+
+type ScopeRange struct {
+	Global    bool
+	StartLine int
+	StartChar int
+	EndLine   int
+	EndChar   int
 }
 
 type Parser struct {
@@ -58,6 +68,7 @@ type Parser struct {
 	symbolMap       *SymbolMap
 	identifierNodes []Node
 	references      map[Token][]Token
+	scopeTable      map[Token]ScopeRange
 }
 
 func (parser *Parser) initialize(input []Token) {
@@ -70,19 +81,33 @@ func (parser *Parser) initialize(input []Token) {
 		currScope:    0,
 	}
 	parser.references = make(map[Token][]Token)
+	parser.scopeTable = make(map[Token]ScopeRange)
 }
 
 func (parser *Parser) isGlobal() bool { return parser.symbolMap.currScope == 0 }
 
-func (parser *Parser) raiseScope() {
+func (parser *Parser) raiseScope(startLine int, startChar int) {
 	parser.symbolMap = &SymbolMap{
 		currentTable: make(map[string]Token),
+		definitions:  make([]Token, 0),
 		previous:     parser.symbolMap,
 		currScope:    parser.symbolMap.currScope + 1,
+		scopeRange: ScopeRange{
+			Global:    false,
+			StartChar: startChar,
+			StartLine: startLine,
+		},
 	}
 }
 
-func (parser *Parser) closeScope() {
+func (parser *Parser) closeScope(endLine int, endChar int) {
+	// append all scoped definitions to scopeTable
+	for _, token := range parser.symbolMap.definitions {
+		parser.symbolMap.scopeRange.EndChar = endChar
+		parser.symbolMap.scopeRange.EndLine = endLine
+		parser.scopeTable[token] = parser.symbolMap.scopeRange
+	}
+	// rollback to previous scope symbolMap
 	if parser.symbolMap != nil && parser.symbolMap.previous != nil {
 		parser.symbolMap = parser.symbolMap.previous
 	}
@@ -122,9 +147,15 @@ func (parser *Parser) addDefinition(token Token) {
 		parser.symbolMap.currentTable[name] = token
 		parser.references[token] = []Token{}
 	}
+	// add to scope table
+	if parser.symbolMap.currScope == 0 {
+		parser.scopeTable[token] = ScopeRange{Global: true}
+	} else {
+		parser.symbolMap.definitions = append(parser.symbolMap.definitions, token)
+	}
 }
 
-func (parser *Parser) Parse(input []Token) ([]Node, []Node, map[Token][]Token, []CompileError) {
+func (parser *Parser) Parse(input []Token) ([]Node, []Node, map[Token][]Token, map[Token]ScopeRange, []CompileError) {
 	parser.initialize(input)
 	program := make([]Node, 0)
 	for token := parser.peekParser(); token.TokenType != EOF; token = parser.peekParser() {
@@ -135,7 +166,7 @@ func (parser *Parser) Parse(input []Token) ([]Node, []Node, map[Token][]Token, [
 			parser.addWarningAt("No usages after definition", name.Line, name.Character)
 		}
 	}
-	return program, parser.identifierNodes, parser.references, parser.errorList
+	return program, parser.identifierNodes, parser.references, parser.scopeTable, parser.errorList
 }
 
 func (parser *Parser) declaration() Node {
@@ -168,7 +199,8 @@ func (parser *Parser) classDeclaration() Node {
 	}
 
 	parser.consume(BRACELEFT, "Expected '{' before class body")
-	parser.raiseScope()
+	brace := parser.peekPrevious()
+	parser.raiseScope(brace.Line, brace.Character)
 	methods := make([]Node, 0)
 	for token := parser.peekParser().TokenType; token != BRACERIGHT && token != EOF; token = parser.peekParser().TokenType {
 		method := parser.funcDeclaration()
@@ -179,7 +211,8 @@ func (parser *Parser) classDeclaration() Node {
 	}
 
 	parser.consume(BRACERIGHT, "Expect '}' at end of class declaration")
-	parser.closeScope()
+	brace = parser.peekPrevious()
+	parser.closeScope(brace.Line, brace.Character)
 
 	return &ClassDecl{Body: methods, Name: identifier, Parent: parent}
 }
@@ -276,13 +309,15 @@ func (parser *Parser) exprStmt() Node {
 }
 
 func (parser *Parser) block() Node {
-	parser.raiseScope()
+	brace := parser.peekPrevious()
+	parser.raiseScope(brace.Line, brace.Character)
 	body := make([]Node, 0)
 	for token := parser.peekParser(); token.TokenType != EOF && token.TokenType != BRACERIGHT; token = parser.peekParser() {
 		body = append(body, parser.declaration())
 	}
 	parser.consume(BRACERIGHT, "Expected '}' at end of block")
-	parser.closeScope()
+	brace = parser.peekPrevious()
+	parser.closeScope(brace.Line, brace.Character)
 	return &BlockStmt{Body: body}
 }
 

@@ -15,7 +15,7 @@ func PrintParse(code string) error {
 	}
 	fmt.Println(tokens)
 
-	ast, _, _, errorList := parser.Parse(tokens)
+	ast, _, _, _, errorList := parser.Parse(tokens)
 	formatCode := formatter.Format(ast)
 	printable, err := (json.Marshal(ast))
 	if err != nil {
@@ -27,16 +27,16 @@ func PrintParse(code string) error {
 	return nil
 }
 
-func ParseCode(code string) ([]Token, []Node, []CompileError, []Node, map[Token][]Token, error) {
+func ParseCode(code string) ([]Token, []Node, []CompileError, []Node, map[Token][]Token, map[Token]ScopeRange, error) {
 	var scanner Scanner
 	var parser Parser
 	tokens, scanErrors, err := scanner.Scan(code)
 	if err != nil {
-		return tokens, nil, nil, nil, nil, err
+		return tokens, nil, nil, nil, nil, nil, err
 	}
 
-	ast, identifiers, references, parseErrors := parser.Parse(tokens)
-	return tokens, ast, append(parseErrors, scanErrors...), identifiers, references, nil
+	ast, identifiers, references, scopeTable, parseErrors := parser.Parse(tokens)
+	return tokens, ast, append(parseErrors, scanErrors...), identifiers, references, scopeTable, nil
 }
 
 func FindErrors(code string) ([]CompileError, error) {
@@ -47,7 +47,7 @@ func FindErrors(code string) ([]CompileError, error) {
 		return nil, err
 	}
 
-	_, _, _, parseErrors := parser.Parse(tokens)
+	_, _, _, _, parseErrors := parser.Parse(tokens)
 
 	return append(parseErrors, codeErrors...), nil
 

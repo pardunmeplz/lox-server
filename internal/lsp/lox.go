@@ -14,6 +14,7 @@ type DocumentService struct {
 	Tokens     []lox.Token
 	References []lox.Node
 	SymbolMap  map[lox.Token][]lox.Token
+	ScopeTable map[lox.Token]lox.ScopeRange
 	Errors     []lox.CompileError
 	Uri        string
 	Mutex      sync.Mutex
@@ -21,6 +22,11 @@ type DocumentService struct {
 }
 
 var keywords []string = []string{
+	//snippets
+	"fun name() {}",
+	"class Name {init(){ }}",
+	"for (var i = 0; i < ; i = i + 1) { }",
+	//keywords
 	"if",
 	"true",
 	"false",
@@ -37,6 +43,8 @@ var keywords []string = []string{
 	"this",
 	"super",
 	"return",
+	// native functions
+	"clock",
 }
 
 func (loxService *DocumentService) Initialize() {
@@ -47,7 +55,7 @@ func (loxService *DocumentService) Initialize() {
 }
 
 func (loxService *DocumentService) ParseCode(code string, version int) {
-	tokens, ast, compileErrors, references, symbolMap, err := lox.ParseCode(code)
+	tokens, ast, compileErrors, references, symbolMap, scopeTable, err := lox.ParseCode(code)
 	if err != nil {
 		return
 	}
@@ -60,6 +68,7 @@ func (loxService *DocumentService) ParseCode(code string, version int) {
 	loxService.References = references
 	loxService.Errors = compileErrors
 	loxService.SymbolMap = symbolMap
+	loxService.ScopeTable = scopeTable
 	loxService.EOF = tokens[len(tokens)-1]
 
 	responseObj := diagnosticNotification(compileErrors, loxService.Uri, version)
@@ -70,6 +79,13 @@ func (loxService *DocumentService) ParseCode(code string, version int) {
 func (loxService *DocumentService) GetCompletion(position lsp.Position) []lsp.CompletionItem {
 	items := make([]lsp.CompletionItem, 0, 0)
 	for definition := range loxService.SymbolMap {
+		scopeRange := loxService.ScopeTable[definition]
+
+		inScope := scopeRange.Global || (scopeRange.StartLine <= int(position.Line) &&
+			scopeRange.EndLine >= int(position.Line))
+		if !inScope {
+			continue
+		}
 		label, ok := definition.Value.(string)
 		if !ok {
 			continue
@@ -85,7 +101,6 @@ func (loxService *DocumentService) GetCompletion(position lsp.Position) []lsp.Co
 		})
 	}
 	return items
-
 }
 
 func (loxService *DocumentService) GetToken(position lsp.Position) lox.Token {
