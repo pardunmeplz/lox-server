@@ -354,7 +354,7 @@ func (parser *Parser) block(scopeContext int) Node {
 	parser.consume(BRACERIGHT, "Expected '}' at end of block")
 	brace = parser.peekPrevious()
 	parser.closeScope(brace.Line, brace.Character)
-	return &BlockStmt{Body: body}
+	return &BlockStmt{Body: body, BlockContext: scopeContext}
 }
 
 func (parser *Parser) ifStmt() Node {

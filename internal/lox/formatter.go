@@ -181,7 +181,9 @@ func (formatter *Formatter) visitReturn(returnStmt *ReturnStmt) {
 }
 
 func (formatter *Formatter) visitBlock(block *BlockStmt) {
-	formatter.addIndentation()
+	if block.BlockContext == BLOCK_CONTEXT {
+		formatter.addIndentation()
+	}
 	formatter.code.WriteString("{\n")
 	formatter.scope++
 
@@ -252,7 +254,7 @@ func (formatter *Formatter) visitFuncDecl(function *FuncDecl) {
 		}
 		param.Accept(formatter)
 	}
-	formatter.code.WriteString(")")
+	formatter.code.WriteString(") ")
 	function.Body.Accept(formatter)
 }
 

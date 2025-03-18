@@ -26,7 +26,8 @@ func (expr *ReturnStmt) Accept(visitor Visitor) {
 }
 
 type BlockStmt struct {
-	Body []Node
+	Body         []Node
+	BlockContext int
 }
 
 func (expr *BlockStmt) Accept(visitor Visitor) {
