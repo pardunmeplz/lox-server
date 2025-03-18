@@ -85,7 +85,6 @@ func (expr *Variable) Accept(visitor Visitor) {
 
 type This struct {
 	Identifier Token
-	Class      ClassDecl
 }
 
 func (expr *This) Accept(visitor Visitor) {

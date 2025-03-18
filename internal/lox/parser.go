@@ -74,7 +74,6 @@ type Parser struct {
 	references      map[Token][]Token
 	scopeTable      map[ScopeRange][]Token
 	scopeRanges     []ScopeRange
-	currentClass    *ClassDecl
 }
 
 func (parser *Parser) initialize(input []Token) {
@@ -205,9 +204,6 @@ func (parser *Parser) classDeclaration() Node {
 	identifier := parser.peekParser()
 	parser.addDefinition(identifier)
 	parser.consume(IDENTIFIER, "Expected identifier for class name")
-	classNode := &ClassDecl{}
-	previousClass := parser.currentClass
-	parser.currentClass = classNode
 
 	var parent *Token
 	if parser.match(LESS) {
@@ -241,12 +237,8 @@ func (parser *Parser) classDeclaration() Node {
 	parser.consume(BRACERIGHT, "Expect '}' at end of class declaration")
 	brace = parser.peekPrevious()
 	parser.closeScope(brace.Line, brace.Character)
-	classNode.Body = methods
-	classNode.Name = identifier
-	classNode.Parent = parent
-	parser.currentClass = previousClass
 
-	return classNode
+	return &ClassDecl{Body: methods, Name: identifier, Parent: parent}
 }
 
 func (parser *Parser) varDeclaration() Node {
@@ -584,7 +576,7 @@ func (parser *Parser) primary() Node {
 		if parser.symbolMap.classContext != CLASS_CONTEXT {
 			parser.addError("Invalid use of 'this' keyword outside of class context ")
 		}
-		return &This{Identifier: currToken, Class: *parser.currentClass}
+		return &This{Identifier: currToken}
 	case parser.match(SUPER):
 		if parser.symbolMap.classContext != CLASS_CONTEXT {
 			parser.addError("Invalid use of 'super' keyword outside of class context ")
