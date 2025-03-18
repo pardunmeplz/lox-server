@@ -6,8 +6,9 @@ import (
 )
 
 type Formatter struct {
-	code  strings.Builder
-	scope int
+	code         strings.Builder
+	scope        int
+	stopNewLines bool
 }
 
 func (formatter *Formatter) visitComment(comment *Comment) {
@@ -15,12 +16,13 @@ func (formatter *Formatter) visitComment(comment *Comment) {
 	if !ok {
 		return
 	}
-	formatter.code.WriteString(fmt.Sprintf("//%s\n", value))
+	formatter.code.WriteString(fmt.Sprintf("//%s", value))
+	formatter.addNewLine()
 }
 
 func (formatter *Formatter) visitNewLine(*NewLine) {
 	formatter.addIndentation()
-	formatter.code.WriteString("\n")
+	formatter.addNewLine()
 }
 
 func (formatter *Formatter) Format(ast []Node) string {
@@ -159,14 +161,16 @@ func (formatter *Formatter) visitGetExpr(getExpr *GetExpr) {
 func (formatter *Formatter) visitExprStmt(exprStmt *ExpressionStmt) {
 	formatter.addIndentation()
 	exprStmt.Expr.Accept(formatter)
-	formatter.code.WriteString(";\n")
+	formatter.code.WriteString(";")
+	formatter.addNewLine()
 }
 
 func (formatter *Formatter) visitPrint(printstmt *PrintStmt) {
 	formatter.addIndentation()
 	formatter.code.WriteString("print ")
 	printstmt.Expr.Accept(formatter)
-	formatter.code.WriteString(";\n")
+	formatter.code.WriteString(";")
+	formatter.addNewLine()
 }
 
 func (formatter *Formatter) visitReturn(returnStmt *ReturnStmt) {
@@ -174,9 +178,11 @@ func (formatter *Formatter) visitReturn(returnStmt *ReturnStmt) {
 	if returnStmt.ReturnsValue {
 		formatter.code.WriteString("return ")
 		returnStmt.Expr.Accept(formatter)
-		formatter.code.WriteString(";\n")
+		formatter.code.WriteString(";")
+		formatter.addNewLine()
 	} else {
-		formatter.code.WriteString("return;\n")
+		formatter.code.WriteString("return;")
+		formatter.addNewLine()
 	}
 }
 
@@ -184,7 +190,8 @@ func (formatter *Formatter) visitBlock(block *BlockStmt) {
 	if block.BlockContext == BLOCK_CONTEXT {
 		formatter.addIndentation()
 	}
-	formatter.code.WriteString("{\n")
+	formatter.code.WriteString("{")
+	formatter.addNewLine()
 	formatter.scope++
 
 	for _, stmt := range block.Body {
@@ -193,12 +200,13 @@ func (formatter *Formatter) visitBlock(block *BlockStmt) {
 
 	formatter.scope--
 	formatter.addIndentation()
-	formatter.code.WriteString("}\n")
+	formatter.code.WriteString("}")
+	formatter.addNewLine()
 
 }
 func (formatter *Formatter) visitIf(ifStmt *IfStmt) {
 	formatter.addIndentation()
-	formatter.code.WriteString("if(")
+	formatter.code.WriteString("if (")
 	ifStmt.Condition.Accept(formatter)
 	formatter.code.WriteString(") ")
 	ifStmt.Then.Accept(formatter)
@@ -225,16 +233,39 @@ func (formatter *Formatter) visitVarDecl(varDecl *VarDecl) {
 		varDecl.Value.Accept(formatter)
 	}
 
-	formatter.code.WriteString(";\n")
+	formatter.code.WriteString(";")
+	formatter.addNewLine()
 
 }
 
 func (formatter *Formatter) visitWhile(while *WhileStmt) {
 	formatter.addIndentation()
-	formatter.code.WriteString("if(")
+	formatter.code.WriteString("while (")
 	while.Condition.Accept(formatter)
-	formatter.code.WriteString(")")
+	formatter.code.WriteString(") ")
 	while.Then.Accept(formatter)
+}
+
+func (formatter *Formatter) visitFor(forStmt *ForStmt) {
+	formatter.addIndentation()
+	formatter.code.WriteString("for (")
+	formatter.stopNewLines = true
+	if forStmt.Initializer != nil {
+		forStmt.Initializer.Accept(formatter)
+		formatter.code.WriteString(" ")
+	} else {
+		formatter.code.WriteString("; ")
+	}
+	if forStmt.Condition != nil {
+		forStmt.Condition.Accept(formatter)
+	}
+	formatter.code.WriteString("; ")
+	if forStmt.Assignment != nil {
+		forStmt.Assignment.Accept(formatter)
+	}
+	formatter.code.WriteString(") ")
+	formatter.stopNewLines = false
+	forStmt.Body.Accept(formatter)
 }
 
 func (formatter *Formatter) visitFuncDecl(function *FuncDecl) {
@@ -271,10 +302,11 @@ func (formatter *Formatter) visitClassDecl(class *ClassDecl) {
 		if !ok {
 			return
 		}
-		formatter.code.WriteString(fmt.Sprintf("< %s {\n", name))
+		formatter.code.WriteString(fmt.Sprintf("< %s {", name))
 	} else {
-		formatter.code.WriteString(fmt.Sprintf("{\n"))
+		formatter.code.WriteString(fmt.Sprintf("{"))
 	}
+	formatter.addNewLine()
 	formatter.scope++
 
 	for _, method := range class.Body {
@@ -282,7 +314,8 @@ func (formatter *Formatter) visitClassDecl(class *ClassDecl) {
 	}
 	formatter.scope--
 	formatter.addIndentation()
-	formatter.code.WriteString(fmt.Sprintf("}\n"))
+	formatter.code.WriteString(fmt.Sprintf("}"))
+	formatter.addNewLine()
 
 }
 
@@ -290,4 +323,11 @@ func (formatter *Formatter) addIndentation() {
 	for range formatter.scope {
 		formatter.code.WriteString("    ")
 	}
+}
+
+func (formatter *Formatter) addNewLine() {
+	if formatter.stopNewLines {
+		return
+	}
+	formatter.code.WriteString("\n")
 }

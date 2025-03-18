@@ -54,6 +54,17 @@ func (expr *VarDecl) Accept(visitor Visitor) {
 	visitor.visitVarDecl(expr)
 }
 
+type ForStmt struct {
+	Initializer Node
+	Condition   Node
+	Assignment  Node
+	Body        Node
+}
+
+func (expr *ForStmt) Accept(visitor Visitor) {
+	visitor.visitFor(expr)
+}
+
 type WhileStmt struct {
 	Condition Node
 	Then      Node

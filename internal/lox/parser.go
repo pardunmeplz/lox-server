@@ -74,6 +74,7 @@ type Parser struct {
 	references      map[Token][]Token
 	scopeTable      map[ScopeRange][]Token
 	scopeRanges     []ScopeRange
+	currentClass    *ClassDecl
 }
 
 func (parser *Parser) initialize(input []Token) {
@@ -204,6 +205,9 @@ func (parser *Parser) classDeclaration() Node {
 	identifier := parser.peekParser()
 	parser.addDefinition(identifier)
 	parser.consume(IDENTIFIER, "Expected identifier for class name")
+	classNode := &ClassDecl{}
+	previousClass := parser.currentClass
+	parser.currentClass = classNode
 
 	var parent *Token
 	if parser.match(LESS) {
@@ -237,8 +241,12 @@ func (parser *Parser) classDeclaration() Node {
 	parser.consume(BRACERIGHT, "Expect '}' at end of class declaration")
 	brace = parser.peekPrevious()
 	parser.closeScope(brace.Line, brace.Character)
+	classNode.Body = methods
+	classNode.Name = identifier
+	classNode.Parent = parent
+	parser.currentClass = previousClass
 
-	return &ClassDecl{Body: methods, Name: identifier, Parent: parent}
+	return classNode
 }
 
 func (parser *Parser) varDeclaration() Node {
@@ -403,22 +411,13 @@ func (parser *Parser) forStmt() Node {
 	var assign Node = nil
 	if parser.peekParser().TokenType != PARANRIGHT {
 		expr := parser.expression()
-		assign = &ExpressionStmt{Expr: expr}
+		assign = expr
 	}
 
 	parser.consume(PARANRIGHT, "Expected ')' before body")
+	body := parser.statement(FOR_CONTEXT)
 
-	loop := &WhileStmt{Condition: condition, Then: parser.statement(FOR_CONTEXT)}
-
-	if assign != nil {
-		loop.Then = &BlockStmt{Body: []Node{loop.Then, assign}}
-	}
-
-	if initializer == nil {
-		return loop
-	}
-
-	return &BlockStmt{Body: []Node{initializer, loop}}
+	return &ForStmt{Initializer: initializer, Condition: condition, Assignment: assign, Body: body}
 }
 
 func (parser *Parser) expression() Node {
@@ -582,8 +581,14 @@ func (parser *Parser) primary() Node {
 	case parser.match(NIL):
 		return &Primary{ValType: "nil", Value: nil}
 	case parser.match(THIS):
-		return &This{Identifier: currToken}
+		if parser.symbolMap.classContext != CLASS_CONTEXT {
+			parser.addError("Invalid use of 'this' keyword outside of class context ")
+		}
+		return &This{Identifier: currToken, Class: *parser.currentClass}
 	case parser.match(SUPER):
+		if parser.symbolMap.classContext != CLASS_CONTEXT {
+			parser.addError("Invalid use of 'super' keyword outside of class context ")
+		}
 		parser.consume(DOT, "Expected '.' after super")
 		parser.consume(IDENTIFIER, "Expected method name for super-class")
 		return &Super{Identifier: currToken, Property: parser.peekPrevious()}

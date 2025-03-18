@@ -22,6 +22,7 @@ type Visitor interface {
 	visitIf(*IfStmt)
 	visitVarDecl(*VarDecl)
 	visitWhile(*WhileStmt)
+	visitFor(*ForStmt)
 	visitFuncDecl(*FuncDecl)
 	visitClassDecl(*ClassDecl)
 	visitNewLine(*NewLine)
@@ -84,6 +85,7 @@ func (expr *Variable) Accept(visitor Visitor) {
 
 type This struct {
 	Identifier Token
+	Class      ClassDecl
 }
 
 func (expr *This) Accept(visitor Visitor) {
