@@ -279,13 +279,18 @@ func (parser *Parser) funcDeclaration(functionContext int) Node {
 
 func (parser *Parser) parameters() []Node {
 	parameters := make([]Node, 0)
-
-	parser.consume(IDENTIFIER, "Expected Parameter Name")
+	consumed := parser.consume(IDENTIFIER, "Expected Parameter Name")
 	parameters = append(parameters, &Variable{Identifier: parser.peekPrevious()})
+	if consumed {
+		parser.addDefinition(parser.peekPrevious())
+	}
 
 	for parser.match(COMMA) {
-		parser.consume(IDENTIFIER, "Expected Parameter Name")
+		consumed = parser.consume(IDENTIFIER, "Expected Parameter Name")
 		parameters = append(parameters, &Variable{Identifier: parser.peekPrevious()})
+		if consumed {
+			parser.addDefinition(parser.peekPrevious())
+		}
 	}
 
 	parser.consume(PARANRIGHT, "Expected ')' before function body")
@@ -624,11 +629,12 @@ func (parser *Parser) match(tokenType int) bool {
 	return false
 }
 
-func (parser *Parser) consume(tokenType int, message string) {
+func (parser *Parser) consume(tokenType int, message string) bool {
 	if parser.match(tokenType) {
-		return
+		return true
 	}
 	parser.addError(message)
+	return false
 }
 
 func (parser *Parser) addError(message string) {
