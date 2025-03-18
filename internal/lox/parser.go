@@ -2,6 +2,7 @@ package lox
 
 import (
 	"fmt"
+	"slices"
 )
 
 /*
@@ -45,6 +46,8 @@ import (
    primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | "super" "." IDENTIFIER ;
 */
 
+var NativeFunctions []string = []string{"clock"}
+
 type SymbolMap struct {
 	currentTable    map[string]Token
 	previous        *SymbolMap
@@ -74,6 +77,7 @@ type Parser struct {
 	references      map[Token][]Token
 	scopeTable      map[ScopeRange][]Token
 	scopeRanges     []ScopeRange
+	panicMode       bool
 }
 
 func (parser *Parser) initialize(input []Token) {
@@ -184,6 +188,7 @@ func (parser *Parser) Parse(input []Token) ([]Node, []Node, map[Token][]Token, m
 }
 
 func (parser *Parser) declaration() Node {
+	parser.panicMode = false
 	switch {
 	case parser.match(VAR):
 		return parser.varDeclaration()
@@ -588,27 +593,30 @@ func (parser *Parser) primary() Node {
 		name, ok := currToken.Value.(string)
 		var definition Token
 		if ok {
+			if slices.Contains(NativeFunctions, name) {
+				return &Variable{Identifier: currToken}
+			}
 			definition, ok = parser.getDefinition(name)
-		}
-		result := Variable{Identifier: currToken, Definition: definition}
-
-		if !ok {
-			parser.addError(fmt.Sprintf("%s is not defined in current scope", name))
+			result := Variable{Identifier: currToken, Definition: definition}
+			if !ok {
+				parser.addError(fmt.Sprintf("%s is not defined in current scope", name))
+			} else {
+				parser.addIdentifier(&result, definition, currToken)
+			}
+			return &result
 		} else {
-			parser.addIdentifier(&result, definition, currToken)
+			return &Variable{Identifier: currToken}
 		}
-
-		return &result
 	case parser.match(PARANLEFT):
 		expr := parser.expression()
-		parser.consume(PARANRIGHT, fmt.Sprintf("Expected ')' at line %d character %d", currToken.Line, currToken.Character))
+		parser.consume(PARANRIGHT, fmt.Sprintf("Expected ')' at line %d character %d", currToken.Line+1, currToken.Character+1))
 		return &Group{Expression: expr}
 
 	case parser.peekParser().TokenType == (EOF):
 		parser.addError("Unexpected end of file")
 
 	default:
-		parser.addError(fmt.Sprintf("Unexpedted token at line %d character %d", currToken.Line, currToken.Character))
+		parser.addError(fmt.Sprintf("Unexpedted token at line %d character %d", currToken.Line+1, currToken.Character+1))
 		parser.advanceParser()
 	}
 	return &Primary{}
@@ -635,19 +643,33 @@ func (parser *Parser) consume(tokenType int, message string) bool {
 }
 
 func (parser *Parser) addError(message string) {
+	if parser.panicMode {
+		return
+	}
 	parser.errorList = append(parser.errorList, CompileError{Message: message, Line: parser.peekParser().Line, Char: parser.peekParser().Character, Severity: 1})
+	parser.panicMode = true
 }
 
 func (parser *Parser) addWarning(message string) {
+	if parser.panicMode {
+		return
+	}
 	parser.errorList = append(parser.errorList, CompileError{Message: message, Line: parser.peekParser().Line, Char: parser.peekParser().Character, Severity: 2})
 }
 
 func (parser *Parser) addWarningAt(message string, line int, char int) {
+	if parser.panicMode {
+		return
+	}
 	parser.errorList = append(parser.errorList, CompileError{Message: message, Line: line, Char: char, Severity: 2})
 }
 
 func (parser *Parser) addErrorAt(message string, line int, char int) {
+	if parser.panicMode {
+		return
+	}
 	parser.errorList = append(parser.errorList, CompileError{Message: message, Line: line, Char: char, Severity: 1})
+	parser.panicMode = true
 }
 
 func (parser *Parser) peekPrevious() Token {
