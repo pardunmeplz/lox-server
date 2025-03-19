@@ -163,11 +163,13 @@ func (scannerState *Scanner) scanToken() error {
 		scannerState.currChar = 0
 		for len(*scannerState.source) > scannerState.current && slices.Contains(blanks, scannerState.peekScanner()) {
 			if scannerState.peekScanner() == '\n' {
+				scannerState.tokens = append(scannerState.tokens, Token{TokenType: NEWLINE, Line: scannerState.line, Character: scannerState.currChar})
+				scannerState.advanceScanner()
 				scannerState.line++
 				scannerState.currChar = 0
-				scannerState.tokens = append(scannerState.tokens, Token{TokenType: NEWLINE, Line: scannerState.line, Character: scannerState.currChar})
+			} else {
+				scannerState.advanceScanner()
 			}
-			scannerState.advanceScanner()
 		}
 	case '/':
 		if scannerState.matchScanner('/') {
