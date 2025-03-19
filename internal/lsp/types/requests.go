@@ -61,6 +61,10 @@ type CompletionParams struct {
 	TextDocumentPositionParams `json:",inline"`
 }
 
+type SemanticTokensParams struct {
+	TextDocument TextDocumentIdentifier `json:"textDocument"`
+}
+
 type DocumentFormattingParams struct {
 	TextDocument TextDocumentIdentifier `json:"textDocument"`
 	Options      FormattingOptions      `json:"options"`

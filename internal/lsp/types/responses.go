@@ -48,3 +48,7 @@ type CompletionList struct {
 	IsIncomplete bool             `json:"isIncomplete"`
 	Items        []CompletionItem `json:"items"`
 }
+
+type SemanticTokens struct {
+	Data []uint `json:"data"`
+}

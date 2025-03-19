@@ -51,6 +51,13 @@ func protocolInitialize(request lsp.JsonRpcRequest) (*lsp.JsonRpcResponse, error
 				"referencesProvider":         true,
 				"documentFormattingProvider": true,
 				"completionProvider":         map[string]any{},
+				"semanticTokensProvider": map[string]any{
+					"legend": lsp.Legend,
+					"range":  false,
+					"full": map[string]any{
+						"delta": false,
+					},
+				},
 			},
 			"serverInfo": map[string]any{
 				"name":    "LoxServer",
@@ -240,6 +247,34 @@ func protocolDefinition(request lsp.JsonRpcRequest) *lsp.JsonRpcResponse {
 		},
 	}
 
+	return &responseObj
+}
+
+func protocolSemanticTokens(request lsp.JsonRpcRequest) *lsp.JsonRpcResponse {
+	responseObj := lsp.JsonRpcResponse{
+		JsonRpc: "2.0",
+		Id:      request.Id,
+		Result:  nil,
+	}
+
+	requestjson, err := json.Marshal(request.Params)
+	var requestObj lsp.SemanticTokensParams
+
+	if err != nil {
+		return &responseObj
+	}
+
+	err = json.Unmarshal(requestjson, &requestObj)
+
+	if err != nil {
+		return &responseObj
+	}
+
+	responseObj.Result = lsp.SemanticTokens{
+		Data: []uint{1, 0, 3, 2, 0},
+	}
+
+	err = json.Unmarshal(requestjson, &requestObj)
 	return &responseObj
 }
 

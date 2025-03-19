@@ -124,6 +124,11 @@ func processRequest(request lsp.JsonRpcRequest) (*lsp.JsonRpcResponse, error) {
 		return protocolFormatting(request), nil
 	case "textDocument/completion":
 		return protocolCompletion(request), nil
+	case "textDocument/semanticTokens/full":
+		return protocolSemanticTokens(request), nil
+	case "/cancelRequest":
+		return nil, nil
+
 	}
 
 	return nil, fmt.Errorf("Invalid Method: %v", request.Method)

@@ -30,6 +30,11 @@ go run cmd/lsp/main.go
 - [x] **References (`textDocument/references`)** – Jump to symbol references.
 - [x] **Formatting (`textDocument/formatting`)** - Auto format code
 - [x] **Auto-Completion (`textDocument/completion`)** – Suggest keywords and variables.  
+- [ ] **Semantic-Highlighting (`textDocument/SemanticTokens`)** - code highlighting
+
+### Bugs
+- Multiline strings are breaking the application
+- Diagnostics don't highlight the characters associated with the error
 
 ## **📖 Resources & References**  
 - [Language Server Protocol Specification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/)  
@@ -42,4 +47,3 @@ go run cmd/lsp/main.go
 It doesn't, This project is a **learning experience** in both **LSP development** and **Go programming**.
 This is both my first LSP and my first project writing go.
 It serves as an exploration of how to build a structured Go project from scratch.  
-
