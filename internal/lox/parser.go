@@ -443,7 +443,7 @@ func (parser *Parser) logicalOr() Node {
 	expr := parser.logicalAnd()
 
 	for token := parser.peekParser(); token.TokenType == OR; token = parser.peekParser() {
-		parser.advanceParser()
+		parser.advanceParser(true)
 		right := parser.logicalAnd()
 		expr = &Binary{Left: expr, Right: right, Operation: token.TokenType}
 	}
@@ -455,7 +455,7 @@ func (parser *Parser) logicalAnd() Node {
 	expr := parser.equality()
 
 	for token := parser.peekParser(); token.TokenType == AND; token = parser.peekParser() {
-		parser.advanceParser()
+		parser.advanceParser(true)
 		right := parser.equality()
 		expr = &Binary{Left: expr, Right: right, Operation: token.TokenType}
 	}
@@ -467,7 +467,7 @@ func (parser *Parser) equality() Node {
 	expr := parser.comparison()
 
 	for token := parser.peekParser(); token.TokenType == EQUALEQUAL || token.TokenType == BANGEQUAL; token = parser.peekParser() {
-		parser.advanceParser()
+		parser.advanceParser(true)
 		right := parser.comparison()
 		expr = &Binary{Left: expr, Right: right, Operation: token.TokenType}
 	}
@@ -480,7 +480,7 @@ func (parser *Parser) comparison() Node {
 
 	for token := parser.peekParser(); token.TokenType == GREATER || token.TokenType == GREATEREQUAL ||
 		token.TokenType == LESS || token.TokenType == LESSEQUAL; token = parser.peekParser() {
-		parser.advanceParser()
+		parser.advanceParser(true)
 		right := parser.term()
 		expr = &Binary{Left: expr, Right: right, Operation: token.TokenType}
 	}
@@ -492,7 +492,7 @@ func (parser *Parser) term() Node {
 	expr := parser.factor()
 
 	for token := parser.peekParser(); token.TokenType == PLUS || token.TokenType == MINUS; token = parser.peekParser() {
-		parser.advanceParser()
+		parser.advanceParser(true)
 		right := parser.factor()
 		expr = &Binary{Left: expr, Right: right, Operation: token.TokenType}
 	}
@@ -504,7 +504,7 @@ func (parser *Parser) factor() Node {
 	expr := parser.unary()
 
 	for token := parser.peekParser(); token.TokenType == STAR || token.TokenType == SLASH; token = parser.peekParser() {
-		parser.advanceParser()
+		parser.advanceParser(true)
 		right := parser.unary()
 		expr = &Binary{Left: expr, Right: right, Operation: token.TokenType}
 	}
@@ -514,7 +514,7 @@ func (parser *Parser) factor() Node {
 
 func (parser *Parser) unary() Node {
 	if token := parser.peekParser(); token.TokenType == MINUS || token.TokenType == BANG {
-		parser.advanceParser()
+		parser.advanceParser(true)
 		return &Unary{Expression: parser.unary(), Operation: token.TokenType}
 	}
 	return parser.call()
@@ -617,18 +617,23 @@ func (parser *Parser) primary() Node {
 
 	default:
 		parser.addError(fmt.Sprintf("Unexpedted token at line %d character %d", currToken.Line+1, currToken.Character+1), ERROR_PARSER)
-		parser.advanceParser()
+		parser.advanceParser(true)
 	}
 	return &Primary{}
 }
 
-func (parser *Parser) advanceParser() {
+func (parser *Parser) advanceParser(ignoreNewline bool) {
+	if ignoreNewline {
+		for parser.peekParser().TokenType == NEWLINE {
+			parser.currentToken++
+		}
+	}
 	parser.currentToken++
 }
 
 func (parser *Parser) match(tokenType int) bool {
 	if tokenType == parser.peekParser().TokenType {
-		parser.advanceParser()
+		parser.advanceParser(tokenType != NEWLINE)
 		return true
 	}
 	return false

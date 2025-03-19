@@ -2,7 +2,6 @@ package lox
 
 import (
 	"fmt"
-	"slices"
 	"strconv"
 	"unicode"
 )
@@ -158,19 +157,9 @@ func (scannerState *Scanner) scanToken() error {
 	case '\t':
 	case '\r':
 	case '\n':
-		blanks := []rune{' ', '\t', '\r', '\n'}
 		scannerState.line++
 		scannerState.currChar = 0
-		for len(*scannerState.source) > scannerState.current && slices.Contains(blanks, scannerState.peekScanner()) {
-			if scannerState.peekScanner() == '\n' {
-				scannerState.tokens = append(scannerState.tokens, Token{TokenType: NEWLINE, Line: scannerState.line, Character: scannerState.currChar})
-				scannerState.advanceScanner()
-				scannerState.line++
-				scannerState.currChar = 0
-			} else {
-				scannerState.advanceScanner()
-			}
-		}
+		scannerState.tokens = append(scannerState.tokens, Token{TokenType: NEWLINE, Line: scannerState.line, Character: scannerState.currChar})
 	case '/':
 		if scannerState.matchScanner('/') {
 			start := scannerState.current
