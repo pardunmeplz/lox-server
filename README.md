@@ -21,16 +21,15 @@ go run cmd/lsp/main.go
 
 ## **🛠️ Planned Features (TODO)**  
 - [x] **Lexical Analysis** – Implement a scanner for Lox.  
-- [ ] **AST Parser** – Build a parser to support syntax-aware features.  
+- [x] **AST Parser** – Build a parser to support syntax-aware features.  
     - [x] **Parsing Tokens** - Parse all the lox tokens to a valid AST
     - [x] **Resolution Analysis** - Check for scope issues and resolve variables
-    - [ ] **Type Checks** - Do statically viable type checks
-    - [ ] **Panic - Recover** - Ignore errors caused by a preceding error to avoid unnecessary error reporting 
+    - [x] **Panic - Recover** - Ignore errors caused by a preceding error to avoid unnecessary error reporting 
 - [x] **Diagnostics (`textDocument/publishDiagnostics`)** – Show syntax errors in real-time.  
 - [x] **Go-to Definition (`textDocument/definition`)** – Jump to symbol definitions.  
 - [x] **References (`textDocument/references`)** – Jump to symbol references.
 - [x] **Formatting (`textDocument/formatting`)** - Auto format code
-- [ ] **Auto-Completion (`textDocument/completion`)** – Suggest keywords and variables.  
+- [x] **Auto-Completion (`textDocument/completion`)** – Suggest keywords and variables.  
 
 ## **📖 Resources & References**  
 - [Language Server Protocol Specification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/)  
