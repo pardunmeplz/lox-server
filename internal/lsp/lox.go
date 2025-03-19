@@ -19,6 +19,7 @@ type DocumentService struct {
 	Uri        string
 	Mutex      sync.Mutex
 	EOF        lox.Token
+	IsError    bool
 }
 
 func (loxService *DocumentService) Initialize() {
@@ -44,6 +45,11 @@ func (loxService *DocumentService) ParseCode(code string, version int) {
 	loxService.SymbolMap = symbolMap
 	loxService.ScopeTable = scopeTable
 	loxService.EOF = tokens[len(tokens)-1]
+	loxService.IsError = false
+
+	for _, error := range compileErrors {
+		loxService.IsError = error.Source < lox.ERROR_RESOLVER || loxService.IsError
+	}
 
 	responseObj := diagnosticNotification(compileErrors, loxService.Uri, version)
 	response, err := json.Marshal(responseObj)
@@ -174,4 +180,31 @@ func (loxService *DocumentService) GetReferences(position lsp.Position, addDefin
 
 	return nil
 
+}
+
+func (loxService *DocumentService) GetSemanticTokens() []uint {
+	// line, character, length, tokentype, tokenModifier(none)
+	response := []uint{}
+	var lastToken *lox.Token = &lox.Token{Character: 0, Length: 0, Line: 0}
+
+	for _, token := range loxService.Tokens {
+		switch token.TokenType {
+		case lox.FOR, lox.AND, lox.FUN, lox.VAR, lox.WHILE, lox.IF, lox.ELSE, lox.THIS, lox.SUPER, lox.CLASS, lox.OR, lox.PRINT, lox.RETURN:
+			if token.Line == lastToken.Line {
+				response = append(response, 0, uint(token.Character)-uint(lastToken.Character), uint(token.Length), 2, 0)
+			} else {
+				response = append(response, uint(token.Line)-uint(lastToken.Line), uint(token.Character), uint(token.Length), 2, 0)
+			}
+			lastToken = &token
+		case lox.IDENTIFIER:
+			if token.Line == lastToken.Line {
+				response = append(response, 0, uint(token.Character)-uint(lastToken.Character), uint(token.Length), 0, 0)
+			} else {
+				response = append(response, uint(token.Line)-uint(lastToken.Line), uint(token.Character), uint(token.Length), 0, 0)
+			}
+			lastToken = &token
+		}
+	}
+
+	return response
 }

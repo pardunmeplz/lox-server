@@ -162,6 +162,9 @@ func protocolFormatting(request lsp.JsonRpcRequest) *lsp.JsonRpcResponse {
 		serverState.logger.Print(fmt.Sprintf("Get Reference Error: URI %s not found", requestObj.TextDocument.Uri))
 		return &responseObj
 	}
+	if document.IsError {
+		return &responseObj
+	}
 	code := document.GetFormattedCode()
 	eof := document.EOF
 	responseParams := make([]lsp.TextEdit, 0, 4)
@@ -270,8 +273,10 @@ func protocolSemanticTokens(request lsp.JsonRpcRequest) *lsp.JsonRpcResponse {
 		return &responseObj
 	}
 
+	semanticTokens := serverState.documents[requestObj.TextDocument.Uri].GetSemanticTokens()
+
 	responseObj.Result = lsp.SemanticTokens{
-		Data: []uint{1, 0, 3, 2, 0},
+		Data: semanticTokens,
 	}
 
 	err = json.Unmarshal(requestjson, &requestObj)

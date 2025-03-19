@@ -10,4 +10,13 @@ type CompileError struct {
 	Line     int
 	Char     int
 	Severity int
+	Source   int
 }
+
+const (
+	ERROR_SCANNER = iota
+	ERROR_PARSER
+	ERROR_RESOLVER
+	ERROR_WARNING
+	ERROR_NONE
+)

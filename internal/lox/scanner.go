@@ -12,6 +12,7 @@ type Token struct {
 	Line      int
 	Value     any
 	Character int
+	Length    int
 }
 
 type Scanner struct {
@@ -111,11 +112,11 @@ func (scannerState *Scanner) scanKeywords(char rune) (bool, error) {
 
 	tokenType, isKeyword := keywords[value]
 	if isKeyword {
-		scannerState.tokens = append(scannerState.tokens, Token{TokenType: tokenType, Line: scannerState.line, Character: startChar})
+		scannerState.tokens = append(scannerState.tokens, Token{TokenType: tokenType, Line: scannerState.line, Character: startChar, Length: scannerState.currChar - startChar})
 		return true, nil
 	}
 
-	scannerState.tokens = append(scannerState.tokens, Token{TokenType: IDENTIFIER, Line: scannerState.line, Character: startChar, Value: value})
+	scannerState.tokens = append(scannerState.tokens, Token{TokenType: IDENTIFIER, Line: scannerState.line, Character: startChar, Value: value, Length: scannerState.currChar - startChar})
 
 	return true, nil
 }
@@ -228,7 +229,7 @@ func (scannerState *Scanner) scanToken() error {
 			}
 			return nil
 		}
-		scannerState.lexicalErrors = append(scannerState.lexicalErrors, CompileError{Line: scannerState.line, Char: scannerState.currChar, Message: fmt.Sprintf("Unexpected token %c at line %d column %d", char, scannerState.line+1, scannerState.currChar+1), Severity: 1})
+		scannerState.lexicalErrors = append(scannerState.lexicalErrors, CompileError{Line: scannerState.line, Char: scannerState.currChar, Message: fmt.Sprintf("Unexpected token %c at line %d column %d", char, scannerState.line+1, scannerState.currChar+1), Severity: 1, Source: ERROR_SCANNER})
 		return nil
 	}
 	return nil
@@ -260,5 +261,5 @@ func (scannerState *Scanner) consumeScanner(char rune, err string) {
 	if scannerState.matchScanner(char) {
 		return
 	}
-	scannerState.lexicalErrors = append(scannerState.lexicalErrors, CompileError{Line: scannerState.line + 1, Char: scannerState.currChar + 1, Message: fmt.Sprintf("%s", err), Severity: 1})
+	scannerState.lexicalErrors = append(scannerState.lexicalErrors, CompileError{Line: scannerState.line + 1, Char: scannerState.currChar + 1, Message: fmt.Sprintf("%s", err), Severity: 1, Source: ERROR_SCANNER})
 }

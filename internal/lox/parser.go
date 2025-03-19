@@ -162,7 +162,7 @@ func (parser *Parser) addDefinition(token Token) {
 		if isPresent && parser.isGlobal() {
 			parser.addWarning(fmt.Sprintf("%s is already declared in this scope at line %d", name, definition.Line+1))
 		} else if isPresent {
-			parser.addError(fmt.Sprintf("%s is already declared in this scope at line %d", name, definition.Line+1))
+			parser.addError(fmt.Sprintf("%s is already declared in this scope at line %d", name, definition.Line+1), ERROR_RESOLVER)
 		}
 		parser.symbolMap.currentTable[name] = token
 		parser.references[token] = []Token{}
@@ -314,7 +314,7 @@ func (parser *Parser) statement(scopeContext int) Node {
 
 	case parser.match(RETURN):
 		if parser.symbolMap.functionContext == GLOBAL_CONTEXT {
-			parser.addError("Unexpected Return statement outside of functions or methods")
+			parser.addError("Unexpected Return statement outside of functions or methods", ERROR_RESOLVER)
 		}
 		if parser.match(SEMICOLON) {
 			return &ReturnStmt{Expr: &Primary{ValType: "nil", Value: nil}, ReturnsValue: false}
@@ -431,7 +431,7 @@ func (parser *Parser) assignment() Node {
 
 		variable, ok := expr.(*Variable)
 		if !ok {
-			parser.addErrorAt("Invalid assignment target", token.Line, token.Character)
+			parser.addErrorAt("Invalid assignment target", token.Line, token.Character, ERROR_PARSER)
 			return expr
 		}
 		expr = &Assignment{Identifier: variable, Value: value}
@@ -547,7 +547,7 @@ func (parser *Parser) finishCall(callee Node) Node {
 	arguments := parser.arguments()
 	parser.consume(PARANRIGHT, "Expected ')' and end of function call")
 	if len(arguments) > 255 {
-		parser.addError("Can't have more than 255 arguments")
+		parser.addError("Can't have more than 255 arguments", ERROR_RESOLVER)
 	}
 	return &Call{Callee: callee, Argument: arguments}
 }
@@ -579,12 +579,12 @@ func (parser *Parser) primary() Node {
 		return &Primary{ValType: "nil", Value: nil}
 	case parser.match(THIS):
 		if parser.symbolMap.classContext != CLASS_CONTEXT {
-			parser.addError("Invalid use of 'this' keyword outside of class context ")
+			parser.addError("Invalid use of 'this' keyword outside of class context ", ERROR_RESOLVER)
 		}
 		return &This{Identifier: currToken}
 	case parser.match(SUPER):
 		if parser.symbolMap.classContext != CLASS_CONTEXT {
-			parser.addError("Invalid use of 'super' keyword outside of class context ")
+			parser.addError("Invalid use of 'super' keyword outside of class context ", ERROR_RESOLVER)
 		}
 		parser.consume(DOT, "Expected '.' after super")
 		parser.consume(IDENTIFIER, "Expected method name for super-class")
@@ -599,7 +599,7 @@ func (parser *Parser) primary() Node {
 			definition, ok = parser.getDefinition(name)
 			result := Variable{Identifier: currToken, Definition: definition}
 			if !ok {
-				parser.addError(fmt.Sprintf("%s is not defined in current scope", name))
+				parser.addError(fmt.Sprintf("%s is not defined in current scope", name), ERROR_RESOLVER)
 			} else {
 				parser.addIdentifier(&result, definition, currToken)
 			}
@@ -613,10 +613,10 @@ func (parser *Parser) primary() Node {
 		return &Group{Expression: expr}
 
 	case parser.peekParser().TokenType == (EOF):
-		parser.addError("Unexpected end of file")
+		parser.addError("Unexpected end of file", ERROR_PARSER)
 
 	default:
-		parser.addError(fmt.Sprintf("Unexpedted token at line %d character %d", currToken.Line+1, currToken.Character+1))
+		parser.addError(fmt.Sprintf("Unexpedted token at line %d character %d", currToken.Line+1, currToken.Character+1), ERROR_PARSER)
 		parser.advanceParser()
 	}
 	return &Primary{}
@@ -638,15 +638,15 @@ func (parser *Parser) consume(tokenType int, message string) bool {
 	if parser.match(tokenType) {
 		return true
 	}
-	parser.addError(message)
+	parser.addError(message, ERROR_PARSER)
 	return false
 }
 
-func (parser *Parser) addError(message string) {
+func (parser *Parser) addError(message string, source int) {
 	if parser.panicMode {
 		return
 	}
-	parser.errorList = append(parser.errorList, CompileError{Message: message, Line: parser.peekParser().Line, Char: parser.peekParser().Character, Severity: 1})
+	parser.errorList = append(parser.errorList, CompileError{Message: message, Line: parser.peekParser().Line, Char: parser.peekParser().Character, Severity: 1, Source: source})
 	parser.panicMode = true
 }
 
@@ -654,21 +654,21 @@ func (parser *Parser) addWarning(message string) {
 	if parser.panicMode {
 		return
 	}
-	parser.errorList = append(parser.errorList, CompileError{Message: message, Line: parser.peekParser().Line, Char: parser.peekParser().Character, Severity: 2})
+	parser.errorList = append(parser.errorList, CompileError{Message: message, Line: parser.peekParser().Line, Char: parser.peekParser().Character, Severity: 2, Source: ERROR_WARNING})
 }
 
 func (parser *Parser) addWarningAt(message string, line int, char int) {
 	if parser.panicMode {
 		return
 	}
-	parser.errorList = append(parser.errorList, CompileError{Message: message, Line: line, Char: char, Severity: 2})
+	parser.errorList = append(parser.errorList, CompileError{Message: message, Line: line, Char: char, Severity: 2, Source: ERROR_WARNING})
 }
 
-func (parser *Parser) addErrorAt(message string, line int, char int) {
+func (parser *Parser) addErrorAt(message string, line int, char int, source int) {
 	if parser.panicMode {
 		return
 	}
-	parser.errorList = append(parser.errorList, CompileError{Message: message, Line: line, Char: char, Severity: 1})
+	parser.errorList = append(parser.errorList, CompileError{Message: message, Line: line, Char: char, Severity: 1, Source: source})
 	parser.panicMode = true
 }
 
