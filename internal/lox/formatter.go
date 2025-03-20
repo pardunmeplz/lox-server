@@ -58,7 +58,7 @@ func (formatter *Formatter) visitPrimary(primary *Primary) {
 	case "number":
 		switch primary.Value.(type) {
 		case float64:
-			value := primary.Value.(float32)
+			value := primary.Value.(float64)
 			formatter.write(fmt.Sprintf("%f", value))
 		case int:
 			value := primary.Value.(int)

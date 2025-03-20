@@ -623,10 +623,11 @@ func (parser *Parser) primary() Node {
 }
 
 func (parser *Parser) advanceParser(ignoreNewline bool) {
-	if ignoreNewline {
+	if ignoreNewline && parser.peekParser().TokenType == NEWLINE {
 		for parser.peekParser().TokenType == NEWLINE {
 			parser.currentToken++
 		}
+		return
 	}
 	parser.currentToken++
 }
