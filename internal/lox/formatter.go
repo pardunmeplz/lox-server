@@ -6,11 +6,12 @@ import (
 )
 
 type Formatter struct {
-	code         strings.Builder
-	scope        int
-	stopNewLines bool
-	queueNewLine bool
-	lastWrite    string
+	code            strings.Builder
+	scope           int
+	stopNewLines    bool
+	stopIndentation bool
+	queueNewLine    bool
+	lastWrite       string
 }
 
 func (formatter *Formatter) write(code string) {
@@ -261,6 +262,7 @@ func (formatter *Formatter) visitFor(forStmt *ForStmt) {
 	formatter.addIndentation()
 	formatter.write("for (")
 	formatter.stopNewLines = true
+	formatter.stopIndentation = true
 	if forStmt.Initializer != nil {
 		forStmt.Initializer.Accept(formatter)
 		formatter.write(" ")
@@ -275,6 +277,7 @@ func (formatter *Formatter) visitFor(forStmt *ForStmt) {
 		forStmt.Assignment.Accept(formatter)
 	}
 	formatter.write(") ")
+	formatter.stopIndentation = false
 	formatter.stopNewLines = false
 	forStmt.Body.Accept(formatter)
 }
@@ -331,6 +334,9 @@ func (formatter *Formatter) visitClassDecl(class *ClassDecl) {
 }
 
 func (formatter *Formatter) addIndentation() {
+	if formatter.stopIndentation {
+		return
+	}
 	for range formatter.scope {
 		formatter.code.WriteString("    ")
 	}

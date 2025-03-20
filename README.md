@@ -30,7 +30,7 @@ go run cmd/lsp/main.go
 - [x] **References (`textDocument/references`)** – Jump to symbol references.
 - [x] **Formatting (`textDocument/formatting`)** - Auto format code
 - [x] **Auto-Completion (`textDocument/completion`)** – Suggest keywords and variables.  
-- [ ] **Semantic-Highlighting (`textDocument/SemanticTokens`)** - code highlighting
+- [x] **Semantic-Highlighting (`textDocument/SemanticTokens`)** - code highlighting
 
 ### ** Limitations**
 - Diagnostics don't highlight the characters associated with the error
