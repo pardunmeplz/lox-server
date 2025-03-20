@@ -28,6 +28,7 @@ func (formatter *Formatter) visitComment(comment *Comment) {
 	if !ok {
 		return
 	}
+	formatter.queueNewLine = false
 	formatter.write(fmt.Sprintf("//%s", value))
 	formatter.addNewLine()
 }
