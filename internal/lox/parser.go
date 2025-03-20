@@ -616,7 +616,7 @@ func (parser *Parser) primary() Node {
 		parser.addError("Unexpected end of file", ERROR_PARSER)
 
 	default:
-		parser.addError(fmt.Sprintf("Unexpedted token at line %d character %d", currToken.Line+1, currToken.Character+1), ERROR_PARSER)
+		parser.addError(fmt.Sprintf("Unexpected token %d at line %d character %d", currToken.TokenType, currToken.Line+1, currToken.Character+1), ERROR_PARSER)
 		parser.advanceParser(true)
 	}
 	return &Primary{}
@@ -632,8 +632,14 @@ func (parser *Parser) advanceParser(ignoreNewline bool) {
 }
 
 func (parser *Parser) match(tokenType int) bool {
+
 	if tokenType == parser.peekParser().TokenType {
-		parser.advanceParser(tokenType != NEWLINE)
+		parser.advanceParser(false)
+		return true
+	}
+
+	if tokenType == parser.peekParserIgnoreNewline().TokenType {
+		parser.advanceParser(true)
 		return true
 	}
 	return false
@@ -683,6 +689,13 @@ func (parser *Parser) peekPrevious() Token {
 
 func (parser *Parser) peekParser() Token {
 	return parser.tokenList[parser.currentToken]
+}
+
+func (parser *Parser) peekParserIgnoreNewline() Token {
+	var peek int
+	for peek = parser.currentToken; parser.tokenList[peek].TokenType == NEWLINE; peek++ {
+	}
+	return parser.tokenList[peek]
 }
 
 func (parser *Parser) peekNext() (Token, bool) {

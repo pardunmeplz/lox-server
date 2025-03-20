@@ -16,8 +16,8 @@ type Formatter struct {
 func (formatter *Formatter) write(code string) {
 	if formatter.queueNewLine && !strings.HasPrefix(code, "\n") && !strings.HasSuffix(formatter.lastWrite, "\n") {
 		formatter.code.WriteString("\n")
-		formatter.queueNewLine = false
 	}
+	formatter.queueNewLine = false
 	formatter.code.WriteString(code)
 	formatter.lastWrite = code
 }

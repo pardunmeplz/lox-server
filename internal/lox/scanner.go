@@ -220,7 +220,7 @@ func (scannerState *Scanner) scanToken() error {
 			}
 			return nil
 		}
-		scannerState.lexicalErrors = append(scannerState.lexicalErrors, CompileError{Line: scannerState.line, Char: scannerState.currChar, Message: fmt.Sprintf("Unexpected token %c at line %d column %d", char, scannerState.line+1, scannerState.currChar+1), Severity: 1, Source: ERROR_SCANNER})
+		scannerState.lexicalErrors = append(scannerState.lexicalErrors, CompileError{Line: scannerState.line, Char: scannerState.currChar, Message: fmt.Sprintf("Unexpected character %c at line %d column %d", char, scannerState.line+1, scannerState.currChar+1), Severity: 1, Source: ERROR_SCANNER})
 		return nil
 	}
 	return nil
