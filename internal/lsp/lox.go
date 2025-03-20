@@ -2,8 +2,10 @@ package lsp
 
 import (
 	"encoding/json"
+	"fmt"
 	"lox-server/internal/lox"
 	lsp "lox-server/internal/lsp/types"
+	"strings"
 	"sync"
 )
 
@@ -217,6 +219,13 @@ func (loxService *DocumentService) GetSemanticTokens() []uint {
 				response = append(response, uint(token.Line)-uint(lastToken.Line), uint(token.Character), uint(token.Length), 4, 0)
 			}
 			lastToken = &token
+		case lox.NUMBER:
+			if token.Line == lastToken.Line {
+				response = append(response, 0, uint(token.Character)-uint(lastToken.Character), uint(token.Length), 5, 0)
+			} else {
+				response = append(response, uint(token.Line)-uint(lastToken.Line), uint(token.Character), uint(token.Length), 5, 0)
+			}
+			lastToken = &token
 		case lox.PLUS, lox.MINUS, lox.DOT, lox.STAR, lox.SLASH, lox.EQUAL, lox.EQUALEQUAL, lox.GREATER, lox.GREATEREQUAL, lox.LESS, lox.LESSEQUAL, lox.BANG, lox.BANGEQUAL, lox.COMMA:
 			if token.Line == lastToken.Line {
 				response = append(response, 0, uint(token.Character)-uint(lastToken.Character), uint(token.Length), 7, 0)
@@ -224,6 +233,31 @@ func (loxService *DocumentService) GetSemanticTokens() []uint {
 				response = append(response, uint(token.Line)-uint(lastToken.Line), uint(token.Character), uint(token.Length), 7, 0)
 			}
 			lastToken = &token
+		case lox.STRING:
+			value, ok := token.Value.(string)
+			value = fmt.Sprintf("\"%s\"", value)
+			if !ok {
+				continue
+			}
+			lines := strings.Split(value, "\n")
+			lastLineToken := token
+			for i, line := range lines {
+				if i == 0 && token.Line == lastToken.Line {
+					response = append(response, 0, uint(token.Character)-uint(lastToken.Character), uint(len(line)), 6, 0)
+					lastLineToken.Length = len(line)
+				} else if i == 0 {
+					response = append(response, uint(token.Line)-uint(lastToken.Line), uint(token.Character), uint(len(line)), 6, 0)
+					lastLineToken.Length = len(line)
+				} else {
+					response = append(response, 1, 0, uint(len(line)), 6, 0)
+					lastLineToken.Line = token.Line + i
+					lastLineToken.Character = token.Character
+					lastLineToken.Length = len(line)
+				}
+
+			}
+			lastToken = &lastLineToken
+
 		}
 
 	}

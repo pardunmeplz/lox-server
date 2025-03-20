@@ -32,9 +32,6 @@ go run cmd/lsp/main.go
 - [x] **Auto-Completion (`textDocument/completion`)** – Suggest keywords and variables.  
 - [ ] **Semantic-Highlighting (`textDocument/SemanticTokens`)** - code highlighting
 
-### Bugs
-- Multiline strings are breaking the application
-
 ### ** Limitations**
 - Diagnostics don't highlight the characters associated with the error
 - The parser is unable to ignore all newlines unlike the original language implementation due to how the formatter handles newlines

@@ -72,6 +72,7 @@ func (scannerState *Scanner) scanNumber(char rune) (bool, error) {
 		return false, nil
 	}
 	start := scannerState.current
+	startChar := scannerState.currChar - 1
 	for (len(*scannerState.source) > scannerState.current) && unicode.IsDigit(scannerState.peekScanner()) {
 		scannerState.advanceScanner()
 	}
@@ -81,7 +82,7 @@ func (scannerState *Scanner) scanNumber(char rune) (bool, error) {
 		if err != nil {
 			return true, err
 		}
-		scannerState.tokens = append(scannerState.tokens, Token{TokenType: NUMBER, Line: scannerState.line, Character: scannerState.currChar, Value: value})
+		scannerState.tokens = append(scannerState.tokens, Token{TokenType: NUMBER, Line: scannerState.line, Character: startChar, Value: value, Length: scannerState.currChar - startChar})
 		return true, nil
 	}
 
@@ -92,7 +93,7 @@ func (scannerState *Scanner) scanNumber(char rune) (bool, error) {
 	if err != nil {
 		return true, err
 	}
-	scannerState.tokens = append(scannerState.tokens, Token{TokenType: NUMBER, Line: scannerState.line, Character: scannerState.currChar, Value: value})
+	scannerState.tokens = append(scannerState.tokens, Token{TokenType: NUMBER, Line: scannerState.line, Character: startChar, Value: value, Length: scannerState.currChar - startChar})
 	return true, nil
 
 }
@@ -204,6 +205,8 @@ func (scannerState *Scanner) scanToken() error {
 		scannerState.tokens = append(scannerState.tokens, Token{TokenType: GREATER, Line: scannerState.line, Character: scannerState.currChar - 1, Length: 1})
 	case '"':
 		start := scannerState.current
+		startChar := scannerState.currChar - 1
+		startLine := scannerState.line
 		for len(*scannerState.source)-1 > scannerState.current && scannerState.peekScanner() != '"' {
 			if scannerState.peekScanner() == '\n' {
 				scannerState.line++
@@ -212,7 +215,7 @@ func (scannerState *Scanner) scanToken() error {
 			scannerState.advanceScanner()
 		}
 		scannerState.consumeScanner('"', fmt.Sprintf("Expected \" at end of string at line %d column %d", scannerState.line, scannerState.currChar))
-		scannerState.tokens = append(scannerState.tokens, Token{TokenType: STRING, Line: scannerState.line, Character: scannerState.currChar, Value: (*scannerState.source)[start : scannerState.current-1]})
+		scannerState.tokens = append(scannerState.tokens, Token{TokenType: STRING, Line: startLine, Character: startChar, Value: (*scannerState.source)[start : scannerState.current-1]})
 
 	default:
 		isKeyword, err := scannerState.scanKeywords(char)
