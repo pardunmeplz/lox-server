@@ -638,10 +638,10 @@ func (parser *Parser) match(tokenType int) bool {
 		return true
 	}
 
-	if tokenType == parser.peekParserIgnoreNewline().TokenType {
-		parser.advanceParser(true)
-		return true
-	}
+	// if tokenType == parser.peekParserIgnoreNewline().TokenType {
+	// 	parser.advanceParser(true)
+	// 	return true
+	// }
 	return false
 }
 

@@ -5,6 +5,7 @@ const (
 	 * Represents a generic type. Acts as a fallback for types which
 	 * can"t be mapped to a specific type like class or enum.
 	 */
+	Type      = "type"
 	Parameter = "parameter"
 	Variable  = "variable"
 	Property  = "property"
@@ -24,6 +25,6 @@ type SemanticTokensLegend struct {
 }
 
 var Legend = SemanticTokensLegend{
-	TokenTypes:     []string{Variable, Method, Keyword, Comment, Number, String, Operator, Parameter, Property},
+	TokenTypes:     []string{Variable, Method, Keyword, Type, Comment, Number, String, Operator, Parameter, Property},
 	TokenModifiers: []string{},
 }

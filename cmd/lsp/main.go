@@ -17,9 +17,12 @@ func startServer() {
 func testLanguage() {
 	var test = `
 
+if (true) {    
+    
+}
 
-
-while (true) {
+fun testfunc(test,newtest,mytest) {    
+    
 }
 `
 	lox.PrintParse(test)

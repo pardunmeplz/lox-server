@@ -134,25 +134,25 @@ func (scannerState *Scanner) scanToken() error {
 
 	switch char {
 	case '+':
-		scannerState.tokens = append(scannerState.tokens, Token{TokenType: PLUS, Line: scannerState.line, Character: scannerState.currChar})
+		scannerState.tokens = append(scannerState.tokens, Token{TokenType: PLUS, Line: scannerState.line, Character: scannerState.currChar - 1, Length: 1})
 	case '-':
-		scannerState.tokens = append(scannerState.tokens, Token{TokenType: MINUS, Line: scannerState.line, Character: scannerState.currChar})
+		scannerState.tokens = append(scannerState.tokens, Token{TokenType: MINUS, Line: scannerState.line, Character: scannerState.currChar - 1, Length: 1})
 	case '*':
-		scannerState.tokens = append(scannerState.tokens, Token{TokenType: STAR, Line: scannerState.line, Character: scannerState.currChar})
+		scannerState.tokens = append(scannerState.tokens, Token{TokenType: STAR, Line: scannerState.line, Character: scannerState.currChar - 1, Length: 1})
 	case ';':
-		scannerState.tokens = append(scannerState.tokens, Token{TokenType: SEMICOLON, Line: scannerState.line, Character: scannerState.currChar})
+		scannerState.tokens = append(scannerState.tokens, Token{TokenType: SEMICOLON, Line: scannerState.line, Character: scannerState.currChar - 1, Length: 1})
 	case '}':
-		scannerState.tokens = append(scannerState.tokens, Token{TokenType: BRACERIGHT, Line: scannerState.line, Character: scannerState.currChar})
+		scannerState.tokens = append(scannerState.tokens, Token{TokenType: BRACERIGHT, Line: scannerState.line, Character: scannerState.currChar - 1, Length: 1})
 	case '{':
-		scannerState.tokens = append(scannerState.tokens, Token{TokenType: BRACELEFT, Line: scannerState.line, Character: scannerState.currChar})
+		scannerState.tokens = append(scannerState.tokens, Token{TokenType: BRACELEFT, Line: scannerState.line, Character: scannerState.currChar - 1, Length: 1})
 	case '(':
-		scannerState.tokens = append(scannerState.tokens, Token{TokenType: PARANLEFT, Line: scannerState.line, Character: scannerState.currChar})
+		scannerState.tokens = append(scannerState.tokens, Token{TokenType: PARANLEFT, Line: scannerState.line, Character: scannerState.currChar - 1, Length: 1})
 	case ')':
-		scannerState.tokens = append(scannerState.tokens, Token{TokenType: PARANRIGHT, Line: scannerState.line, Character: scannerState.currChar})
+		scannerState.tokens = append(scannerState.tokens, Token{TokenType: PARANRIGHT, Line: scannerState.line, Character: scannerState.currChar - 1, Length: 1})
 	case '.':
-		scannerState.tokens = append(scannerState.tokens, Token{TokenType: DOT, Line: scannerState.line, Character: scannerState.currChar})
+		scannerState.tokens = append(scannerState.tokens, Token{TokenType: DOT, Line: scannerState.line, Character: scannerState.currChar - 1, Length: 1})
 	case ',':
-		scannerState.tokens = append(scannerState.tokens, Token{TokenType: COMMA, Line: scannerState.line, Character: scannerState.currChar})
+		scannerState.tokens = append(scannerState.tokens, Token{TokenType: COMMA, Line: scannerState.line, Character: scannerState.currChar - 1, Length: 1})
 	case ' ':
 	case '\t':
 	case '\r':
@@ -163,6 +163,7 @@ func (scannerState *Scanner) scanToken() error {
 	case '/':
 		if scannerState.matchScanner('/') {
 			start := scannerState.current
+			startChar := scannerState.currChar - 2
 			for scannerState.peekScannerNext() != '\n' && len(*scannerState.source) > scannerState.current {
 				scannerState.advanceScanner()
 			}
@@ -170,36 +171,37 @@ func (scannerState *Scanner) scanToken() error {
 				Token{
 					TokenType: COMMENT,
 					Line:      scannerState.line,
-					Character: scannerState.currChar,
+					Character: startChar,
 					Value:     fmt.Sprintf("%s", (*scannerState.source)[start:scannerState.current]),
+					Length:    scannerState.currChar - startChar,
 				})
 			return nil
 		}
-		scannerState.tokens = append(scannerState.tokens, Token{TokenType: SLASH, Line: scannerState.line, Character: scannerState.currChar})
+		scannerState.tokens = append(scannerState.tokens, Token{TokenType: SLASH, Line: scannerState.line, Character: scannerState.currChar - 1, Length: 1})
 	case '=':
 		if scannerState.matchScanner('=') {
-			scannerState.tokens = append(scannerState.tokens, Token{TokenType: EQUALEQUAL, Line: scannerState.line, Character: scannerState.currChar})
+			scannerState.tokens = append(scannerState.tokens, Token{TokenType: EQUALEQUAL, Line: scannerState.line, Character: scannerState.currChar - 2, Length: 2})
 			return nil
 		}
-		scannerState.tokens = append(scannerState.tokens, Token{TokenType: EQUAL, Line: scannerState.line, Character: scannerState.currChar})
+		scannerState.tokens = append(scannerState.tokens, Token{TokenType: EQUAL, Line: scannerState.line, Character: scannerState.currChar - 1, Length: 1})
 	case '!':
 		if scannerState.matchScanner('=') {
-			scannerState.tokens = append(scannerState.tokens, Token{TokenType: BANGEQUAL, Line: scannerState.line, Character: scannerState.currChar})
+			scannerState.tokens = append(scannerState.tokens, Token{TokenType: BANGEQUAL, Line: scannerState.line, Character: scannerState.currChar - 2, Length: 2})
 			return nil
 		}
-		scannerState.tokens = append(scannerState.tokens, Token{TokenType: BANG, Line: scannerState.line, Character: scannerState.currChar})
+		scannerState.tokens = append(scannerState.tokens, Token{TokenType: BANG, Line: scannerState.line, Character: scannerState.currChar - 1, Length: 1})
 	case '<':
 		if scannerState.matchScanner('=') {
-			scannerState.tokens = append(scannerState.tokens, Token{TokenType: LESSEQUAL, Line: scannerState.line, Character: scannerState.currChar})
+			scannerState.tokens = append(scannerState.tokens, Token{TokenType: LESSEQUAL, Line: scannerState.line, Character: scannerState.currChar - 2, Length: 2})
 			return nil
 		}
-		scannerState.tokens = append(scannerState.tokens, Token{TokenType: LESS, Line: scannerState.line, Character: scannerState.currChar})
+		scannerState.tokens = append(scannerState.tokens, Token{TokenType: LESS, Line: scannerState.line, Character: scannerState.currChar - 1, Length: 1})
 	case '>':
 		if scannerState.matchScanner('=') {
-			scannerState.tokens = append(scannerState.tokens, Token{TokenType: GREATEREQUAL, Line: scannerState.line, Character: scannerState.currChar})
+			scannerState.tokens = append(scannerState.tokens, Token{TokenType: GREATEREQUAL, Line: scannerState.line, Character: scannerState.currChar - 2, Length: 2})
 			return nil
 		}
-		scannerState.tokens = append(scannerState.tokens, Token{TokenType: GREATER, Line: scannerState.line, Character: scannerState.currChar})
+		scannerState.tokens = append(scannerState.tokens, Token{TokenType: GREATER, Line: scannerState.line, Character: scannerState.currChar - 1, Length: 1})
 	case '"':
 		start := scannerState.current
 		for len(*scannerState.source)-1 > scannerState.current && scannerState.peekScanner() != '"' {

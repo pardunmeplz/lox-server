@@ -203,7 +203,29 @@ func (loxService *DocumentService) GetSemanticTokens() []uint {
 				response = append(response, uint(token.Line)-uint(lastToken.Line), uint(token.Character), uint(token.Length), 0, 0)
 			}
 			lastToken = &token
+		case lox.TRUE, lox.FALSE, lox.NIL:
+			if token.Line == lastToken.Line {
+				response = append(response, 0, uint(token.Character)-uint(lastToken.Character), uint(token.Length), 3, 0)
+			} else {
+				response = append(response, uint(token.Line)-uint(lastToken.Line), uint(token.Character), uint(token.Length), 3, 0)
+			}
+			lastToken = &token
+		case lox.COMMENT:
+			if token.Line == lastToken.Line {
+				response = append(response, 0, uint(token.Character)-uint(lastToken.Character), uint(token.Length), 4, 0)
+			} else {
+				response = append(response, uint(token.Line)-uint(lastToken.Line), uint(token.Character), uint(token.Length), 4, 0)
+			}
+			lastToken = &token
+		case lox.PLUS, lox.MINUS, lox.DOT, lox.STAR, lox.SLASH, lox.EQUAL, lox.EQUALEQUAL, lox.GREATER, lox.GREATEREQUAL, lox.LESS, lox.LESSEQUAL, lox.BANG, lox.BANGEQUAL, lox.COMMA:
+			if token.Line == lastToken.Line {
+				response = append(response, 0, uint(token.Character)-uint(lastToken.Character), uint(token.Length), 7, 0)
+			} else {
+				response = append(response, uint(token.Line)-uint(lastToken.Line), uint(token.Character), uint(token.Length), 7, 0)
+			}
+			lastToken = &token
 		}
+
 	}
 
 	return response

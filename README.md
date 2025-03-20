@@ -34,7 +34,10 @@ go run cmd/lsp/main.go
 
 ### Bugs
 - Multiline strings are breaking the application
+
+### ** Limitations**
 - Diagnostics don't highlight the characters associated with the error
+- The parser is unable to ignore all newlines unlike the original language implementation due to how the formatter handles newlines
 
 ## **📖 Resources & References**  
 - [Language Server Protocol Specification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/)  
@@ -47,3 +50,4 @@ go run cmd/lsp/main.go
 It doesn't, This project is a **learning experience** in both **LSP development** and **Go programming**.
 This is both my first LSP and my first project writing go.
 It serves as an exploration of how to build a structured Go project from scratch.  
+
