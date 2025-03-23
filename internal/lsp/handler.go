@@ -137,12 +137,12 @@ func processRequest(request lsp.JsonRpcRequest) (*lsp.JsonRpcResponse, error) {
 func getRequestValues[T any](document *T, request lsp.JsonRpcRequest) error {
 	params, err := json.Marshal(request.Params)
 	if err != nil {
-		serverState.logger.Print(fmt.Sprintf("Marshal failed : %v", err))
+		// serverState.logger.Print(fmt.Sprintf("Marshal failed : %v", err))
 		return err
 	}
 	err = json.Unmarshal(params, &document)
 	if err != nil {
-		serverState.logger.Print(fmt.Sprintf("Params Unmarshal failed : %v", err))
+		// serverState.logger.Print(fmt.Sprintf("Params Unmarshal failed : %v", err))
 		return err
 	}
 	return nil

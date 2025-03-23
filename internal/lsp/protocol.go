@@ -2,7 +2,7 @@ package lsp
 
 import (
 	"encoding/json"
-	"fmt"
+	// "fmt"
 	"lox-server/internal/lox"
 	lsp "lox-server/internal/lsp/types"
 )
@@ -108,7 +108,7 @@ func protocolReferences(request lsp.JsonRpcRequest) *lsp.JsonRpcResponse {
 
 	document, ok := serverState.documents[requestObj.TextDocument.Uri]
 	if !ok {
-		serverState.logger.Print(fmt.Sprintf("Get Reference Error: URI %s not found", requestObj.TextDocument.Uri))
+		// serverState.logger.Print(fmt.Sprintf("Get Reference Error: URI %s not found", requestObj.TextDocument.Uri))
 		return &responseObj
 	}
 
@@ -117,10 +117,6 @@ func protocolReferences(request lsp.JsonRpcRequest) *lsp.JsonRpcResponse {
 	if references == nil {
 		return &responseObj
 	}
-
-	test, err := json.Marshal(references)
-
-	serverState.logger.Print(fmt.Sprintf("References: %s", test))
 
 	responseParams := make([]lsp.Location, 0, 4)
 	for _, reference := range references {
@@ -159,7 +155,7 @@ func protocolFormatting(request lsp.JsonRpcRequest) *lsp.JsonRpcResponse {
 
 	document, ok := serverState.documents[requestObj.TextDocument.Uri]
 	if !ok {
-		serverState.logger.Print(fmt.Sprintf("Get Reference Error: URI %s not found", requestObj.TextDocument.Uri))
+		// serverState.logger.Print(fmt.Sprintf("Get Reference Error: URI %s not found", requestObj.TextDocument.Uri))
 		return &responseObj
 	}
 	if document.IsError {
@@ -206,7 +202,7 @@ func protocolCompletion(request lsp.JsonRpcRequest) *lsp.JsonRpcResponse {
 
 	document, ok := serverState.documents[requestObj.TextDocument.Uri]
 	if !ok {
-		serverState.logger.Print(fmt.Sprintf("Get Reference Error: URI %s not found", requestObj.TextDocument.Uri))
+		// serverState.logger.Print(fmt.Sprintf("Get Reference Error: URI %s not found", requestObj.TextDocument.Uri))
 		return &responseObj
 	}
 	items := document.GetCompletion(requestObj.Position)
