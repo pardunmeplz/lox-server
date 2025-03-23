@@ -16,10 +16,8 @@ go run cmd/lsp/main.go
 ```
 
 ## **📌 Current Features**  
-✅ **Basic LSP communication** (via stdin/stdout)  
-✅ **Handles `initialize` and `shutdown` requests**  
-
-## **🛠️ Planned Features (TODO)**  
+- [x] **Basic LSP communication** (via stdin/stdout)  
+- [x] **Handles `initialize` and `shutdown` requests**  
 - [x] **Lexical Analysis** – Implement a scanner for Lox.  
 - [x] **AST Parser** – Build a parser to support syntax-aware features.  
     - [x] **Parsing Tokens** - Parse all the lox tokens to a valid AST
