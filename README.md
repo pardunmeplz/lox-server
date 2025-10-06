@@ -1,6 +1,6 @@
 # **LoxServer**  
 
-LoxServer is a **Language Server Protocol (LSP)** for the **Lox programming language**, written in **GoLang**. The provides LSP support for diagnostics, formatting, autocompletion, and navigation in lox.  
+LoxServer is a **Language Server Protocol (LSP)** for the **Lox programming language**, written in **GoLang**. The project provides LSP support for diagnostics, formatting, autocompletion, and navigation in lox.  
 
 ## **🚀 Getting Started**  
 
@@ -43,4 +43,5 @@ go run cmd/lsp/main.go
 Tooling support for a language or framework is a major make or break in modern software development.
 To both understand the inner workings and efforts to create and maintain tooling that are crucial to developing software is the
 primary purpose of this project.
+
 
