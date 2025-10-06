@@ -1,6 +1,6 @@
 # **LoxServer**  
 
-LoxServer is a **hobby implementation** of a **Language Server Protocol (LSP)** for the **Lox programming language**, written in **Go**. The project aims to provide LSP support for diagnostics, formatting, autocompletion, and navigation in lox.  
+LoxServer is a **Language Server Protocol (LSP)** for the **Lox programming language**, written in **GoLang**. The project aims to provide LSP support for diagnostics, formatting, autocompletion, and navigation in lox.  
 
 ## **🚀 Getting Started**  
 
@@ -31,18 +31,15 @@ go run cmd/lsp/main.go
 - [x] **Semantic-Highlighting (`textDocument/SemanticTokens`)** - code highlighting
 
 ### ** Limitations**
-- Diagnostics don't highlight the characters associated with the error
-- The parser is unable to ignore all newlines unlike the original language implementation due to how the formatter handles newlines
+- Diagnostics don't highlight the characters associated with the error, only the line number
 
 ## **📖 Resources & References**  
 - [Language Server Protocol Specification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/)  
 - [Crafting Interpreters](https://craftinginterpreters.com/) – Lox Language Reference  
-- [Go Language Documentation](https://go.dev/doc/)  
 
 ---
 
-### **💡 Why This Matters?**  
-It doesn't, This project is a **learning experience** in both **LSP development** and **Go programming**.
-This is both my first LSP and my first project writing go.
-It serves as an exploration of how to build a structured Go project from scratch.  
-
+### **💡 Motivation**  
+Tooling support for a language or framework is a major make or break in modern software development.
+To both understand the inner workings and efforts to create and maintain tooling that are crucial to developing software is the
+primary purpose of this project.
