@@ -7,7 +7,6 @@ import (
 	"io"
 	lspt "lox-server/internal/lsp/types"
 	rpc "lox-server/internal/parser_rpc"
-	"os"
 	"sync"
 )
 
@@ -15,10 +14,12 @@ import (
 Router: just a map of string to function that will run the function based on exact string match of incoming request's
 */
 type Server struct {
-	Router   map[string]func(*rpc.JsonRpcRequest) *lspt.JsonRpcResponse
-	Reader   *bufio.Reader
-	buffer   []byte
-	Writer   *os.File
+	Router map[string]func(*rpc.JsonRpcRequest) *lspt.JsonRpcResponse
+	// you need to set up an bufio.NewReader(os.Stdin) in main
+	Reader *bufio.Reader
+	buffer []byte
+	// you need to set up an bufio.NewWriter(os.Stdout) in main
+	Writer   *bufio.Writer
 	WriterMu sync.Mutex
 }
 
@@ -119,5 +120,9 @@ func WriteMessage(server *Server, response []byte) error {
 	defer server.WriterMu.Unlock()
 
 	_, err := server.Writer.Write(append(header, response...))
+	if err != nil {
+		return err
+	}
+	server.Writer.Flush()
 	return err
 }
