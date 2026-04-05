@@ -1,4 +1,4 @@
-package parser
+package parser_rpc
 
 import (
 	"bytes"
@@ -8,7 +8,7 @@ import (
 )
 
 func initParser() ParserState {
-	st := ParserState{PARSER_STATUS_HEADER, JsonRpcRequest{make(map[string]string), nil, nil}}
+	st := ParserState{PARSER_STATUS_HEADER, JsonRpcRequest{}}
 	return st
 }
 
@@ -16,7 +16,7 @@ func TestPositiveFlow(t *testing.T) {
 	parser := initParser()
 	req := []byte("Content-Length: 128\r\n\r\n{\"jsonrpc\": \"2.0\",\"id\": 0,\"result\": {\"capabilities\": {\"textDocumentSync\": 1,\"completionProvider\": { \"resolveProvider\": true }}}}")
 
-	consumed, err := parseJsonRpcRequest(req, &parser)
+	consumed, err := ParseJsonRpcRequest(req, &parser)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +40,7 @@ func TestContentLength(t *testing.T) {
 	parser := initParser()
 	req := []byte("\r\n\r\n{\"jsonrpc\": \"2.0\",\"id\": 0,\"result\": {\"capabilities\": {\"textDocumentSync\": 1,\"completionProvider\": { \"resolveProvider\": true }}}}")
 
-	_, err := parseJsonRpcRequest(req, &parser)
+	_, err := ParseJsonRpcRequest(req, &parser)
 	if !strings.Contains(err.Error(), MISSING_CONTENT_LENGTH) {
 		t.Fatal("Error expected, got %w", err)
 	}
@@ -49,7 +49,7 @@ func TestContentLength(t *testing.T) {
 	parser = initParser()
 	req = []byte("Content-Length: 12A\r\n\r\n{\"jsonrpc\": \"2.0\",\"id\": 0,\"result\": {\"capabilities\": {\"textDocumentSync\": 1,\"completionProvider\": { \"resolveProvider\": true }}}}")
 
-	_, err = parseJsonRpcRequest(req, &parser)
+	_, err = ParseJsonRpcRequest(req, &parser)
 	if !strings.Contains(err.Error(), "Invalid Content-Length") {
 		t.Fatal("Error expected, got %w", err)
 	}
@@ -58,7 +58,7 @@ func TestContentLength(t *testing.T) {
 	parser = initParser()
 	req = []byte("Content-Length: 128\r\n\r\n{\"jsonrpc\": \"2.0\",\"id\": 0,\"result\": {\"capabilities\": {\"textDocumentSync\": 1,\"completionProvider\": { \"resolveProvider\": true }}}}bogus value should be ignored")
 
-	_, err = parseJsonRpcRequest(req, &parser)
+	_, err = ParseJsonRpcRequest(req, &parser)
 	if err != nil {
 		t.Fatal(err)
 	}

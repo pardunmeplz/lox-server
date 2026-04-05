@@ -1,4 +1,4 @@
-package parser
+package parser_rpc
 
 import (
 	"bytes"
@@ -30,7 +30,7 @@ const (
 	INVALID_CONTENT_LENGTH = "Invalid Content-Length value %s"
 )
 
-func parseJsonRpcRequest(data []byte, parserState *ParserState) (int, error) {
+func ParseJsonRpcRequest(data []byte, parserState *ParserState) (int, error) {
 	totalConsumed := 0
 	for parserState.ParserStatus == PARSER_STATUS_HEADER {
 		consumed, err := parseHeader(data, parserState)

@@ -1,4 +1,4 @@
-package parser
+package parser_rpc
 
 type JsonRpcRequest struct {
 	Headers      map[string]string
