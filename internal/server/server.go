@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	lspt "lox-server/internal/lsp/types"
 	rpc "lox-server/internal/parser_rpc"
 	"os"
@@ -15,7 +16,7 @@ Router: just a map of string to function that will run the function based on exa
 */
 type Server struct {
 	Router   map[string]func(*rpc.JsonRpcRequest) *lspt.JsonRpcResponse
-	Reader   bufio.Reader
+	Reader   *bufio.Reader
 	buffer   []byte
 	Writer   *os.File
 	WriterMu sync.Mutex
@@ -35,27 +36,31 @@ todo: Bubble all errors up to the server loop
 set up a log to put out the error in an error log and fast fail, exit server on error
 */
 func StartServer(server *Server) {
-	buffer := make([]byte, BUFFER_SIZE)
+	server.buffer = make([]byte, BUFFER_SIZE)
 	bufferIndex := 0
 	rpcParser := rpc.ParserState{ParserStatus: rpc.PARSER_STATUS_HEADER, Request: rpc.JsonRpcRequest{}}
 
 	for {
 
 		// grow buffer when running out of space
-		if len(buffer)-bufferIndex < BUFFER_THRESHOLD {
-			buffer = append(buffer, make([]byte, BUFFER_INCREMENT)...)
+		if len(server.buffer)-bufferIndex < BUFFER_THRESHOLD {
+			server.buffer = append(server.buffer, make([]byte, BUFFER_INCREMENT)...)
 		}
 
 		// read from io
-		bytes, err := server.Reader.Read(buffer[bufferIndex:])
+		bytes, err := server.Reader.Read(server.buffer[bufferIndex:])
 		if err != nil {
+			if err == io.EOF {
+				// suggests clent shut down
+				return
+			}
 			// log error
 			return
 		}
 		bufferIndex += bytes
 
 		// parse current buffer
-		consumed, err := rpc.ParseJsonRpcRequest(buffer[:bufferIndex], &rpcParser)
+		consumed, err := rpc.ParseJsonRpcRequest(server.buffer[:bufferIndex], &rpcParser)
 		if err != nil {
 			// log error
 			return
@@ -63,18 +68,25 @@ func StartServer(server *Server) {
 
 		// discard consumed bytes
 		bufferIndex -= consumed
-		buffer = buffer[consumed:]
+		server.buffer = server.buffer[consumed:]
 
 		// reset parser and process request if parsing done
 		if rpcParser.ParserStatus == rpc.PARSER_STATUS_DONE {
-			go func() {
-				respBytes, err := routeRequest(server, &rpcParser.Request)
+			// todo: this could cause responses to be sent out of order
+			// the spec does have some leeway for response order for parallel execution
+			// but it is still expected to for the most part to return responses in order
+			go func(request rpc.JsonRpcRequest) {
+				respBytes, err := routeRequest(server, &request)
 				if err != nil {
 					// handle server failure ( log and respond with appropriate error response or fast fail )
 					return
 				}
+				if respBytes == nil {
+					// nil response means router doesn't want to send a response via the loop
+					return
+				}
 				WriteMessage(server, respBytes)
-			}()
+			}(*&rpcParser.Request)
 			rpcParser.ParserStatus = rpc.PARSER_STATUS_HEADER
 			rpcParser.Request = rpc.JsonRpcRequest{}
 		}
@@ -90,6 +102,9 @@ func routeRequest(server *Server, req *rpc.JsonRpcRequest) ([]byte, error) {
 		return nil, nil
 	}
 	var resp = route(req)
+	if resp == nil {
+		return nil, nil
+	}
 
 	responseBytes, err := json.Marshal(&resp)
 	if err != nil {
