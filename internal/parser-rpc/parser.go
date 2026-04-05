@@ -2,6 +2,7 @@ package parser
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"strconv"
 )
@@ -29,7 +30,7 @@ const (
 	INVALID_CONTENT_LENGTH = "Invalid Content-Length value %s"
 )
 
-func parse(data []byte, parserState *ParserState) (int, error) {
+func parseJsonRpcRequest(data []byte, parserState *ParserState) (int, error) {
 	totalConsumed := 0
 	for parserState.ParserStatus == PARSER_STATUS_HEADER {
 		consumed, err := parseHeader(data, parserState)
@@ -100,7 +101,15 @@ func parseContent(data []byte, parserState *ParserState) (int, error) {
 		return 0, nil
 	}
 
-	parserState.Request.Content = data[:length]
+	// parse the base json rpc message that is expected to always be the same for all requests
+	parserState.Request.ContentBytes = data[:length]
+	parserState.Request.Content = &JsonRpcRequestContent{}
+
+	err = json.Unmarshal(parserState.Request.ContentBytes, parserState.Request.Content)
+	if err != nil {
+		return 0, err
+	}
+
 	parserState.ParserStatus = PARSER_STATUS_DONE
 	return length, nil
 }
