@@ -1,6 +1,9 @@
 package parsing
 
-import lox_sc "lox-server/internal/lox/lexical_analysis"
+import (
+	// lox_dg "lox-server/internal/lox/diagnostics"
+	lox_sc "lox-server/internal/lox/lexical_analysis"
+)
 
 type Node interface {
 	Accept(Visitor)
@@ -32,8 +35,8 @@ type Visitor interface {
 }
 
 type Comment struct {
-	Comment lox_sc.Token
-	Inline  bool
+	Token  *lox_sc.Token
+	Inline bool
 }
 
 func (expr *Comment) Accept(visitor Visitor) {
@@ -41,8 +44,9 @@ func (expr *Comment) Accept(visitor Visitor) {
 }
 
 type Primary struct {
-	Value   any
-	ValType string
+	Value any
+	// ValType string
+	Token *lox_sc.Token
 }
 
 func (expr *Primary) Accept(visitor Visitor) {
@@ -69,6 +73,8 @@ func (expr *Unary) Accept(visitor Visitor) {
 }
 
 type Group struct {
+	OpenParan  *lox_sc.Token
+	CloseParan *lox_sc.Token
 	Expression Node
 }
 
@@ -77,8 +83,8 @@ func (expr *Group) Accept(visitor Visitor) {
 }
 
 type Variable struct {
-	Identifier lox_sc.Token
-	Definition lox_sc.Token
+	Identifier *lox_sc.Token
+	Definition *lox_sc.Token
 }
 
 func (expr *Variable) Accept(visitor Visitor) {
@@ -86,7 +92,7 @@ func (expr *Variable) Accept(visitor Visitor) {
 }
 
 type This struct {
-	Identifier lox_sc.Token
+	Identifier *lox_sc.Token
 }
 
 func (expr *This) Accept(visitor Visitor) {
@@ -94,8 +100,8 @@ func (expr *This) Accept(visitor Visitor) {
 }
 
 type Super struct {
-	Identifier lox_sc.Token
-	Property   lox_sc.Token
+	Identifier *lox_sc.Token
+	Super      *lox_sc.Token
 }
 
 func (expr *Super) Accept(visitor Visitor) {
@@ -122,7 +128,7 @@ func (expr *Call) Accept(visitor Visitor) {
 
 type GetExpr struct {
 	Object   Node
-	Property lox_sc.Token
+	Property *lox_sc.Token
 }
 
 func (expr *GetExpr) Accept(visitor Visitor) {
